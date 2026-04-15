@@ -1,0 +1,136 @@
+.search-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(6, 11, 24, 0.75);
+  backdrop-filter: blur(12px) saturate(150%);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: clamp(60px, 12vh, 120px) 16px 40px;
+}
+
+.search-modal {
+  width: 100%; max-width: 680px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-2xl);
+  padding: 28px;
+  box-shadow: var(--shadow-xl), 0 0 0 1px rgba(0,102,255,0.1);
+  max-height: 80vh; overflow-y: auto;
+}
+
+.search-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.search-label {
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--blue);
+  display: flex; align-items: center; gap: 10px;
+}
+.search-label-line { width: 20px; height: 2px; background: var(--blue); border-radius: 2px; flex-shrink: 0; }
+.search-close-btn {
+  width: 32px; height: 32px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  color: var(--text-2); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all var(--t-fast);
+}
+.search-close-btn:hover { background: var(--bg-3); color: var(--text); }
+
+.search-input-wrap {
+  position: relative; display: flex; align-items: center;
+  background: var(--bg-2); border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-xl); overflow: hidden;
+  transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
+  margin-bottom: 16px;
+}
+.search-input-wrap:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(0,102,255,0.1);
+}
+.search-input {
+  flex: 1; border: none; background: none;
+  padding: 18px 20px; font-size: 1.0625rem; color: var(--text);
+}
+.search-input::placeholder { color: var(--text-3); }
+.search-clear-btn {
+  position: absolute; right: 64px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--bg-3); border: none; color: var(--text-3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all var(--t-fast);
+}
+.search-clear-btn:hover { background: var(--border-strong); color: var(--text); }
+.search-submit-btn {
+  width: 52px; height: 52px; margin: 6px;
+  border-radius: var(--r-lg); background: var(--blue);
+  color: #fff; border: none; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; transition: all var(--t) var(--ease);
+  box-shadow: 0 4px 16px rgba(0,102,255,0.3);
+}
+.search-submit-btn:hover:not(:disabled) { background: var(--blue-light); transform: scale(1.05); }
+.search-submit-btn:disabled { opacity: 0.5; }
+
+/* Quick categories */
+.search-quick-cats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.quick-cat-pill {
+  padding: 6px 14px; border-radius: var(--r-full);
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  font-size: 0.82rem; font-weight: 500; color: var(--text-2);
+  cursor: pointer; transition: all var(--t-fast) var(--ease);
+}
+.quick-cat-pill:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* Results */
+.search-results-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; }
+.suggestion-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--r-lg);
+  border: none; background: none; cursor: pointer; text-align: left;
+  transition: background var(--t-fast) var(--ease);
+}
+.suggestion-item:hover { background: var(--surface-2); }
+.suggestion-image { width: 52px; height: 52px; border-radius: var(--r); overflow: hidden; background: var(--surface-2); flex-shrink: 0; border: 1px solid var(--border); }
+.suggestion-image img { width: 100%; height: 100%; object-fit: cover; }
+.suggestion-info { flex: 1; min-width: 0; }
+.suggestion-name { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.suggestion-cat { font-size: 0.75rem; color: var(--text-3); }
+.suggestion-price { text-align: right; flex-shrink: 0; }
+.suggestion-price .price-current { display: block; font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.suggestion-price .price-original { font-size: 0.75rem; color: var(--text-3); text-decoration: line-through; }
+.suggestion-arrow { color: var(--text-3); flex-shrink: 0; opacity: 0; transition: opacity var(--t-fast); }
+.suggestion-item:hover .suggestion-arrow { opacity: 1; color: var(--blue); }
+
+.view-all-results-btn {
+  width: 100%; padding: 13px; margin-top: 10px;
+  background: var(--surface-2); border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg); color: var(--blue); font-size: 0.9rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; transition: all var(--t-fast);
+}
+.view-all-results-btn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+.search-no-results { text-align: center; padding: 24px 0; color: var(--text-2); }
+
+/* Default state */
+.search-default { display: flex; flex-direction: column; gap: 20px; }
+.search-section {}
+.search-section-title {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.clear-history-btn { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: var(--blue); background: none; border: none; cursor: pointer; text-transform: none; letter-spacing: 0; }
+.search-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.search-tag {
+  padding: 7px 14px; border-radius: var(--r-full);
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  font-size: 0.85rem; color: var(--text-2); cursor: pointer; font-weight: 500;
+  transition: all var(--t-fast);
+}
+.search-tag:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.search-history { display: flex; flex-direction: column; gap: 2px; }
+.history-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: var(--r);
+  font-size: 0.875rem; color: var(--text-2); background: none; border: none;
+  cursor: pointer; transition: background var(--t-fast); text-align: left;
+}
+.history-item:hover { background: var(--surface-2); color: var(--text); }

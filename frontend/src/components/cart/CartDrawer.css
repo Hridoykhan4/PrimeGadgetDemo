@@ -1,0 +1,42 @@
+.drawer-overlay { position: fixed; inset: 0; z-index: 700; background: rgba(6,11,24,0.6); backdrop-filter: blur(6px); }
+.cart-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 800;
+  width: min(420px, 100vw); background: var(--surface);
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow-xl);
+  border-left: 1px solid var(--border);
+}
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.drawer-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.drawer-count { font-size: 0.8rem; color: var(--text-3); margin-top: 2px; }
+.drawer-close { width: 36px; height: 36px; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--t-fast); }
+.drawer-close:hover { background: var(--bg-3); color: var(--text); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px 24px; }
+.drawer-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; text-align: center; }
+.empty-bag-icon { font-size: 3.5rem; color: var(--text-3); }
+.drawer-empty h4 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; }
+.drawer-empty p { color: var(--text-3); font-size: 0.875rem; margin-bottom: 8px; }
+.drawer-items { display: flex; flex-direction: column; gap: 12px; }
+.drawer-item { display: flex; gap: 12px; padding: 14px; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--border); position: relative; }
+.drawer-item-img { width: 72px; height: 72px; border-radius: var(--r); overflow: hidden; background: var(--bg-3); flex-shrink: 0; border: 1px solid var(--border); }
+.drawer-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.drawer-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.drawer-item-name { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.drawer-item-variant { font-size: 0.75rem; color: var(--text-3); }
+.drawer-item-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+.drawer-qty-ctrl { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 3px; }
+.drawer-qty-ctrl button { width: 24px; height: 24px; border-radius: 6px; background: none; border: none; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background var(--t-fast); }
+.drawer-qty-ctrl button:hover:not(:disabled) { background: var(--bg-3); color: var(--text); }
+.drawer-qty-ctrl button:disabled { opacity: 0.3; }
+.drawer-qty-ctrl span { font-size: 0.875rem; font-weight: 700; min-width: 20px; text-align: center; }
+.drawer-item-price { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.drawer-remove { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: var(--r-sm); background: none; border: none; color: var(--text-3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--t-fast); }
+.drawer-remove:hover { background: rgba(255,59,59,0.1); color: var(--red); }
+.drawer-footer { border-top: 1px solid var(--border); padding: 20px 24px; flex-shrink: 0; }
+.drawer-summary { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-2); }
+.free-tag { color: var(--green); font-weight: 700; }
+.drawer-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.drawer-total span { font-size: 0.9rem; font-weight: 600; color: var(--text-2); }
+.drawer-total strong { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--text); }
+.free-ship-note { text-align: center; font-size: 0.78rem; color: var(--text-3); margin-bottom: 12px; background: rgba(0,200,83,0.08); padding: 7px 12px; border-radius: var(--r-full); border: 1px solid rgba(0,200,83,0.15); }
