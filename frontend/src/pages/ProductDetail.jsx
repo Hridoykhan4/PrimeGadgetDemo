@@ -5,10 +5,11 @@ import { Helmet } from 'react-helmet-async';
 import {
   FiHeart, FiStar, FiShield, FiTruck,
   FiRefreshCw, FiShare2, FiChevronRight, FiMinus, FiPlus,
-  FiCheck, FiZap, FiMessageSquare, FiMessageCircle
+  FiCheck, FiZap, FiMessageSquare, FiMessageCircle, FiShoppingCart, FiCreditCard
 } from 'react-icons/fi';
 import api from '../utils/api.js';
-import { useAuthStore } from '../store/index.js';
+import { useAuthStore, useCartStore } from '../store/index.js';
+import { useCartDrawerStore } from '../components/ui/uiStore.js';
 import ProductCard from '../components/product/ProductCard.jsx';
 import toast from 'react-hot-toast';
 import './ProductDetail.css';
@@ -20,6 +21,8 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toggleWishlist, isWishlisted } = useAuthStore();
+  const addItem = useCartStore((st) => st.addItem);
+  const openCart = useCartDrawerStore((st) => st.open);
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -151,7 +154,7 @@ export default function ProductDetail() {
                   {product.stock > 0
                     ? product.stock <= 5
                       ? `Only ${product.stock} left`
-                      : 'In Stock — Ships Today'
+                      : 'In stock in the UAE'
                     : 'Out of Stock'}
                 </span>
               </div>
@@ -186,14 +189,14 @@ export default function ProductDetail() {
               <div className="pd-price-card">
                 <div className="pd-price-label">Price</div>
                 <div className="pd-price-main-row">
-                  <span className="pd-price">AED {price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                  <span className="pd-price">AED {price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   {product.salePrice > 0 && (
                     <span className="pd-price-original">
-                      AED {product.price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      AED {product.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
                   {saved > 0 && (
-                    <span className="pd-savings-inline">Save AED {saved.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    <span className="pd-savings-inline">Save AED {saved.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   )}
                 </div>
               </div>
@@ -232,6 +235,27 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* Primary purchase CTAs */}
+              <div className="pd-buy-group">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg pd-buy-btn"
+                  disabled={product.stock === 0}
+                  onClick={() => { addItem(product, qty); toast.success('Added to cart'); openCart(); }}
+                >
+                  <FiShoppingCart aria-hidden="true" /> Add to cart
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-lg pd-buynow-btn"
+                  disabled={product.stock === 0}
+                  onClick={() => { addItem(product, qty); navigate('/checkout'); }}
+                >
+                  <FiCreditCard aria-hidden="true" /> Buy now
+                </button>
+              </div>
+              <p className="pd-pay-note">Cash on delivery or secure card / Apple Pay via Stripe · VAT and delivery shown at checkout</p>
+
               {/* CTA Buttons */}
               <div className="pd-cta-group">
                 <motion.button
@@ -259,7 +283,7 @@ export default function ProductDetail() {
               <div className="pd-whatsapp-note">
                 <FiMessageCircle size={14} />
                 <span>
-                  Average WhatsApp response time: <strong>under 2 minutes</strong>. Arabic & English support.
+                  Questions about this item? Message us on WhatsApp — Arabic &amp; English.
                 </span>
               </div>
 

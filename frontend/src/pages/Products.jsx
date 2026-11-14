@@ -16,10 +16,11 @@ const SORTS = [
   { value: '-totalSold', label: 'Best Selling' },
 ];
 const PRICE_RANGES = [
-  { label: 'Under AED 500', min: '', max: 500 },
-  { label: 'AED 500–1,000', min: 500, max: 1000 },
-  { label: 'AED 1,000–3,000', min: 1000, max: 3000 },
-  { label: 'AED 3,000+', min: 3000, max: '' },
+  { label: 'Under AED 20', min: '', max: 20 },
+  { label: 'AED 20–50', min: 20, max: 50 },
+  { label: 'AED 50–100', min: 50, max: 100 },
+  { label: 'AED 100–500', min: 100, max: 500 },
+  { label: 'AED 500+', min: 500, max: '' },
 ];
 
 export default function Products() {
@@ -34,8 +35,8 @@ export default function Products() {
   const [filters, setFilters] = useState({
     keyword: searchParams.get('keyword') || '',
     category: searchParams.get('category') || '',
-    sort: searchParams.get('sort') || '-createdAt',
-    minPrice: '', maxPrice: '',
+    sort: searchParams.get('sort') || '-totalSold',
+    minPrice: searchParams.get('price[gte]') || '', maxPrice: searchParams.get('price[lte]') || '',
     minRating: '', inStock: false,
   });
 
@@ -68,13 +69,16 @@ export default function Products() {
       ...f,
       keyword: searchParams.get('keyword') || '',
       category: searchParams.get('category') || '',
+      sort: searchParams.get('sort') || f.sort,
+      minPrice: searchParams.get('price[gte]') || '',
+      maxPrice: searchParams.get('price[lte]') || '',
     }));
     setPage(1);
-  }, [searchParams.get('keyword'), searchParams.get('category')]);
+  }, [searchParams.get('keyword'), searchParams.get('category'), searchParams.get('sort'), searchParams.get('price[gte]'), searchParams.get('price[lte]')]);
 
   const updateFilter = (key, val) => { setFilters(f => ({ ...f, [key]: val })); setPage(1); };
   const clearFilters = () => {
-    setFilters({ keyword: '', category: '', sort: '-createdAt', minPrice: '', maxPrice: '', minRating: '', inStock: false });
+    setFilters({ keyword: '', category: '', sort: '-totalSold', minPrice: '', maxPrice: '', minRating: '', inStock: false });
     setPage(1); setSearchParams({});
   };
 
@@ -84,7 +88,7 @@ export default function Products() {
   return (
     <>
       <Helmet>
-        <title>{filters.category ? `${filters.category} — PrimeGadgets Dubai` : 'Shop All Gadgets — PrimeGadgets Dubai'}</title>
+        <title>{filters.category ? `${filters.category} — PrimeGadgets UAE` : 'Shop All Products — PrimeGadgets UAE'}</title>
       </Helmet>
 
       <div className="products-page page">

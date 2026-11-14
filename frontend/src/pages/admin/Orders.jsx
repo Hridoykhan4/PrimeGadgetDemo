@@ -63,7 +63,7 @@ export default function AdminOrders() {
             <table style={{ width:'100%', borderCollapse:'collapse' }}>
               <thead>
                 <tr style={{ background:'var(--surface-2)' }}>
-                  {['Order #','Customer','Items','Total','Status','Date','Actions'].map(h => (
+                  {['Order #','Customer','Items','Total','Payment','Status','Date','Actions'].map(h => (
                     <th key={h} style={{ padding:'12px 16px', textAlign:'left', fontSize:'.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'var(--text-3)', borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -80,11 +80,16 @@ export default function AdminOrders() {
                         <div>
                           <p style={{ fontSize:'.875rem', fontWeight:600, marginBottom:2 }}>{order.user?.name}</p>
                           <p style={{ fontSize:'.75rem', color:'var(--text-3)' }}>{order.user?.email}</p>
+                          {order.shippingAddress?.phone && <p style={{ fontSize:'.75rem', color:'var(--text-2)' }}>{order.shippingAddress.phone} · {order.shippingAddress.emirate}</p>}
                         </div>
                       </td>
                       <td style={{ padding:'14px 16px', fontSize:'.875rem', color:'var(--text-2)' }}>{order.items?.length}</td>
                       <td style={{ padding:'14px 16px' }}>
                         <strong style={{ fontFamily:'var(--font-display)', fontSize:'.9rem', color:'var(--blue)' }}>AED {order.total?.toLocaleString()}</strong>
+                      </td>
+                      <td style={{ padding:'14px 16px', whiteSpace:'nowrap' }}>
+                        <span style={{ fontSize:'.78rem', fontWeight:600 }}>{order.paymentMethod === 'cod' ? 'COD' : 'Card'}</span>{' '}
+                        <span style={{ fontSize:'.72rem', fontWeight:700, padding:'2px 8px', borderRadius:'var(--r-full)', background: order.isPaid ? 'rgba(0,200,83,.12)' : 'rgba(245,166,35,.14)', color: order.isPaid ? 'var(--green)' : '#b7791f' }}>{order.isPaid ? 'Paid' : 'Unpaid'}</span>
                       </td>
                       <td style={{ padding:'14px 16px' }}>
                         <select

@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { FiCheck, FiPackage, FiArrowRight, FiHome } from 'react-icons/fi';
+import { FiCheck, FiPackage, FiArrowRight, FiHome, FiCreditCard, FiClock } from 'react-icons/fi';
 import api from '../utils/api.js';
 
 export default function OrderSuccess() {
   const { id } = useParams();
+  const [params] = useSearchParams();
+  const sessionId = params.get('session_id');
   const [order, setOrder] = useState(null);
+  const [paid, setPaid] = useState(null); // null = checking / not a card order
 
   useEffect(() => {
-    api.get(`/orders/${id}`).then(({ data }) => setOrder(data.order)).catch(() => {});
     window.scrollTo(0, 0);
-  }, [id]);
+    if (sessionId) {
+      api.get(`/payments/verify/${id}`, { params: { session_id: sessionId } })
+        .then(({ data }) => { setOrder(data.order); setPaid(data.paid); })
+        .catch(() => setPaid(false));
+    } else {
+      api.get(`/orders/${id}`).then(({ data }) => { setOrder(data.order); if (data.order.paymentMethod === 'card') setPaid(data.order.isPaid); }).catch(() => {});
+    }
+  }, [id, sessionId]);
 
   return (
     <>
@@ -34,10 +43,19 @@ export default function OrderSuccess() {
             <FiCheck strokeWidth={3} />
           </motion.div>
 
-          <h1 className="display-md" style={{ marginBottom: 12 }}>Order Confirmed!</h1>
+          <h1 className="display-md" style={{ marginBottom: 12 }}>{paid ? 'Payment Successful!' : 'Order Confirmed!'}</h1>
           <p style={{ color: 'var(--text-2)', marginBottom: 8 }}>
-            Thank you for your purchase. Your order has been placed successfully.
+            {paid
+              ? 'Thank you! Your card payment was received and your order is confirmed.'
+              : order?.paymentMethod === 'cod'
+                ? 'Thank you! Pay in cash or card when your order arrives.'
+                : 'Thank you for your purchase. Your order has been placed successfully.'}
           </p>
+          {order?.paymentMethod === 'card' && (
+            <div role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 'var(--r-full)', fontSize: '.82rem', fontWeight: 600, background: paid ? 'rgba(0,200,83,.12)' : 'rgba(245,166,35,.14)', color: paid ? 'var(--green)' : '#b7791f' }}>
+              {paid ? <><FiCreditCard size={13} /> Paid · AED {order.total?.toFixed(2)}</> : paid === false ? <><FiClock size={13} /> Payment pending — you can pay from your order page</> : <><FiClock size={13} /> Confirming payment…</>}
+            </div>
+          )}
           {order && (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', background: 'var(--surface-2)', borderRadius: 'var(--r-full)', margin: '16px 0', fontSize: '.875rem' }}>
               <FiPackage size={14} style={{ color: 'var(--blue)' }} />

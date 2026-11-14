@@ -43,7 +43,6 @@ export function Login() {
             <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
           </form>
           <p className="auth-switch">Don't have an account? <Link to="/register">Create one →</Link></p>
-          <div className="auth-demo"><p>Demo Admin: <code>admin@primegadgets.ae</code> / <code>admin@PG2024</code></p></div>
         </motion.div>
       </div>
     </>

@@ -1,482 +1,362 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, useInView, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import {
-  FiArrowRight, FiStar, FiTruck, FiShield, FiRefreshCw,
-  FiHeadphones, FiChevronLeft, FiChevronRight, FiZap,
-  FiClock, FiAward, FiUsers, FiMessageCircle
+  FiArrowRight, FiChevronLeft, FiChevronRight, FiTruck, FiShield, FiCreditCard,
+  FiMessageCircle, FiShoppingCart, FiCoffee, FiScissors, FiGift, FiTool, FiHome,
+  FiSmartphone, FiGrid, FiPause, FiPlay, FiTag, FiTrendingUp, FiDollarSign, FiZap,
 } from 'react-icons/fi';
 import api from '../utils/api.js';
 import ProductCard from '../components/product/ProductCard.jsx';
+import { useCartStore } from '../store/index.js';
+import { useCartDrawerStore } from '../components/ui/uiStore.js';
+import toast from 'react-hot-toast';
 import './Home.css';
 
-const HERO_SLIDES = [
-  {
-    id: 1,
-    eyebrow: 'New Arrival 2024',
-    title: 'DJI Mavic 3 Pro',
-    subtitle: 'Tri-camera · Hasselblad · 43min flight',
-    desc: 'Capture Every Perspective. Professional aerial imagery meets unmatched portability.',
-    cta: 'Shop Drones',
-    ctaLink: '/products?category=Drones',
-    price: 'From AED 2,899',
-    image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=900&q=80',
-    accent: '#0066FF',
-    tag: '🏆 Editor\'s Choice'
-  },
-  {
-    id: 2,
-    eyebrow: 'Best Seller',
-    title: 'Apple AirPods Pro',
-    subtitle: 'H2 Chip · ANC · 30hr Battery',
-    desc: 'Silence the world. Experience audio in its purest, most immersive form.',
-    cta: 'Shop AirBuds',
-    ctaLink: '/products?category=AirBuds+%26+Headphones',
-    price: 'AED 849',
-    image: 'https://images.unsplash.com/photo-1594074586687-2bb43be26a55?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjF8fEFwcGxlJTIwQWlyUG9kcyUyMFByb3xlbnwwfHwwfHx8MA%3D%3D',
-    accent: '#6E6E73',
-    tag: '⚡ Flash Deal'
-  },
-  {
-    id: 3,
-    eyebrow: 'Just Launched',
-    title: 'Meta Quest 3',
-    subtitle: 'Mixed Reality · 4K+ · 120Hz',
-    desc: 'Step into the future. Mixed reality has never felt this real.',
-    cta: 'Shop VR & AR',
-    ctaLink: '/products?category=VR+%26+AR',
-    price: 'AED 1,799',
-    image: 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=900&q=80',
-    accent: '#0099FF',
-    tag: '🆕 New'
-  },
-];
-
-const CATEGORIES = [
-  { name: 'Drones', emoji: '🚁', img: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400', count: '24 products' },
-  { name: 'Smart Watches', emoji: '⌚', img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', count: '18 products' },
-  { name: 'AirBuds & Headphones', emoji: '🎧', img: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400', count: '31 products' },
-  { name: 'VR & AR', emoji: '🥽', img: 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=400', count: '12 products' },
-  { name: 'Cameras', emoji: '📷', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', count: '19 products' },
-  { name: 'Gaming', emoji: '🎮', img: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z2FtaW5nfGVufDB8fDB8fHww', count: '27 products' },
-  { name: 'AI Devices', emoji: '🤖', img: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=400', count: '8 products' },
-  { name: 'Accessories', emoji: '🔌', img: 'https://images.unsplash.com/photo-1569388330292-79cc1ec67270?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YWNjZXNzb3JpZXN8ZW58MHx8MHx8fDA%3D', count: '45+ products' },
-];
-
-const TRUST_BADGES = [
-  { icon: <FiTruck />, title: 'Free Delivery', desc: 'On orders over AED 200 across UAE' },
-  { icon: <FiShield />, title: '100% Genuine', desc: 'Authorized dealer, all products verified' },
-  { icon: <FiRefreshCw />, title: '30-Day Returns', desc: 'Hassle-free return policy' },
-  { icon: <FiHeadphones />, title: '24/7 Support', desc: 'WhatsApp & live chat support' },
-];
-
-const TESTIMONIALS = [
-  { name: 'Ahmed Al Mansouri', city: 'Dubai', rating: 5, text: 'Ordered the DJI Mavic 3 Pro and it arrived the same day in perfect condition. PrimeGadgets is the most reliable tech store in the UAE.', verified: true, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80' },
-  { name: 'Sara Johnson', city: 'Abu Dhabi', rating: 5, text: 'Got my AirPods Pro with genuine Apple warranty. The customer service team helped me choose the right model. Excellent experience!', verified: true, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80' },
-  { name: 'Khalid Ibrahim', city: 'Sharjah', rating: 5, text: 'The Meta Quest 3 arrived sealed in original packaging. Setup was smooth and the team was super helpful. 100% recommend.', verified: true, avatar: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=80' },
-];
-
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
-const WHATSAPP_MESSAGE = import.meta.env.VITE_WHATSAPP_MESSAGE || 'Hi PrimeGadgets! I\'m interested in your premium gadgets.';
 
-function HeroSlider() {
-  const [current, setCurrent] = useState(0);
+const CATEGORY_ICONS = {
+  'Home & Kitchen': FiCoffee,
+  'Beauty & Personal Care': FiScissors,
+  'Kids & Toys': FiGift,
+  'Tools & Outdoor': FiTool,
+  'Smart Home': FiHome,
+  Accessories: FiSmartphone,
+};
+
+const PRICE_TABS = [
+  { label: 'Under AED 20', max: 20 },
+  { label: 'Under AED 35', max: 35 },
+  { label: 'Under AED 60', max: 60 },
+];
+
+const SHELVES = ['Home & Kitchen', 'Beauty & Personal Care', 'Kids & Toys'];
+
+const fmtAED = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const shortName = (name = '') => name.split(/[,–-]/)[0].trim().slice(0, 60);
+const priceOf = (p) => (p.salePrice > 0 && p.salePrice < p.price ? p.salePrice : p.price);
+const img800 = (p) => p.images?.[0]?.url;
+
+/* ── Hero: real best-selling products ─────────────────────────────────────── */
+function HeroSlider({ slides }) {
+  const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const reduce = useReducedMotion();
+  const addItem = useCartStore((s) => s.addItem);
+  const openCart = useCartDrawerStore((s) => s.open);
+  const n = slides.length;
 
-  const handleWhatsApp = () => {
-    const message = encodeURIComponent(WHATSAPP_MESSAGE);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
-  };
+  const go = useCallback((d) => setI((c) => (c + d + n) % n), [n]);
 
   useEffect(() => {
-    if (paused) return;
-    const t = setInterval(() => setCurrent(c => (c + 1) % HERO_SLIDES.length), 5000);
+    if (paused || reduce || n < 2) return;
+    const t = setInterval(() => go(1), 6000);
     return () => clearInterval(t);
-  }, [paused]);
+  }, [paused, reduce, n, go]);
 
-  const slide = HERO_SLIDES[current];
+  if (!n) return <div className="hero-skeleton skeleton" aria-hidden="true" />;
+  const p = slides[i];
+
+  const onKey = (e) => {
+    if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  };
 
   return (
-    <section className="hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          className="hero-bg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <img src={slide.image} alt={slide.title} className="hero-bg-img" />
-          <div className="hero-overlay" />
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="container hero-inner">
-        <div className="hero-content">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={slide.id + 'content'}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <div className="hero-eyebrow">
-                <span className="hero-tag">{slide.tag}</span>
-                <span>{slide.eyebrow}</span>
+    <section
+      className="hero2"
+      aria-roledescription="carousel"
+      aria-label="Best sellers"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      onKeyDown={onKey}
+    >
+      <div className="hero2-main">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={p._id}
+            className="hero2-slide"
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${n}`}
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <div className="hero2-copy">
+              <div className="hero2-eyebrow">
+                <span className="hero2-chip"><FiTrendingUp aria-hidden="true" /> Best seller</span>
+                {p.totalSold > 0 && <span>{p.totalSold.toLocaleString()} sold</span>}
               </div>
-              <h1 className="hero-title">{slide.title}</h1>
-              <p className="hero-subtitle">{slide.subtitle}</p>
-              <p className="hero-desc">{slide.desc}</p>
-              <div className="hero-price-row">
-                <span className="hero-price">{slide.price}</span>
-                <span className="hero-vat">Incl. VAT</span>
+              <h1 className="hero2-title">{shortName(p.name)}</h1>
+              <p className="hero2-desc line-clamp-2">{p.name}</p>
+              <div className="hero2-price">
+                <span className="hero2-cur">AED</span>
+                <span className="hero2-amt">{fmtAED(priceOf(p))}</span>
+                <span className="hero2-vat">incl. VAT shown at checkout</span>
               </div>
-              <div className="hero-ctas">
-                <Link to={slide.ctaLink} className="btn btn-primary btn-lg">
-                  {slide.cta} <FiArrowRight />
-                </Link>
-                <button onClick={handleWhatsApp} className="btn btn-lg hero-whatsapp-btn">
-                  <FiMessageCircle size={16} /> Buy on WhatsApp
+              <div className="hero2-ctas">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  onClick={() => { addItem(p, 1); toast.success('Added to cart'); openCart(); }}
+                >
+                  <FiShoppingCart aria-hidden="true" /> Add to cart
                 </button>
+                <Link to={`/products/${p._id}`} className="btn btn-secondary btn-lg">
+                  View details <FiArrowRight aria-hidden="true" />
+                </Link>
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              <p className="hero2-note"><FiTruck aria-hidden="true" /> In stock in the UAE · delivery in 1 business day</p>
+            </div>
+            <Link to={`/products/${p._id}`} className="hero2-visual" tabIndex={-1} aria-hidden="true">
+              <div className="hero2-blob" />
+              <img src={img800(p)} alt="" className="hero2-img" fetchpriority="high" />
+            </Link>
+          </motion.div>
+        </AnimatePresence>
 
-        {/* Slide counter + nav */}
-        <div className="hero-controls">
-          <button className="hero-nav-btn" onClick={() => setCurrent(c => (c - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}>
-            <FiChevronLeft />
-          </button>
-          <div className="hero-dots">
-            {HERO_SLIDES.map((_, i) => (
-              <button
-                key={i}
-                className={`hero-dot ${i === current ? 'active' : ''}`}
-                onClick={() => setCurrent(i)}
-              />
-            ))}
+        {n > 1 && (
+          <div className="hero2-controls">
+            <button type="button" className="hero2-btn" onClick={() => go(-1)} aria-label="Previous slide"><FiChevronLeft /></button>
+            <div className="hero2-dots" role="tablist" aria-label="Choose slide">
+              {slides.map((s, k) => (
+                <button
+                  key={s._id}
+                  type="button"
+                  role="tab"
+                  aria-selected={k === i}
+                  aria-label={`Slide ${k + 1}: ${shortName(s.name)}`}
+                  className={`hero2-dot ${k === i ? 'active' : ''}`}
+                  onClick={() => setI(k)}
+                />
+              ))}
+            </div>
+            <button type="button" className="hero2-btn" onClick={() => go(1)} aria-label="Next slide"><FiChevronRight /></button>
+            {!reduce && (
+              <button type="button" className="hero2-btn" onClick={() => setPaused((v) => !v)} aria-label={paused ? 'Play slideshow' : 'Pause slideshow'}>
+                {paused ? <FiPlay /> : <FiPause />}
+              </button>
+            )}
           </div>
-          <button className="hero-nav-btn" onClick={() => setCurrent(c => (c + 1) % HERO_SLIDES.length)}>
-            <FiChevronRight />
-          </button>
-        </div>
+        )}
       </div>
 
+      <div className="hero2-side">
+        <Link to="/products?price[lte]=20&sort=-totalSold" className="promo-tile promo-tile-a">
+          <span className="promo-kicker"><FiTag aria-hidden="true" /> Everyday low prices</span>
+          <strong>Under AED 20</strong>
+          <span className="promo-link">Shop now <FiArrowRight aria-hidden="true" /></span>
+        </Link>
+        <Link to="/products?sort=-totalSold" className="promo-tile promo-tile-b">
+          <span className="promo-kicker"><FiTruck aria-hidden="true" /> Free delivery</span>
+          <strong>On orders over AED 200</strong>
+          <span className="promo-link">Start shopping <FiArrowRight aria-hidden="true" /></span>
+        </Link>
+      </div>
     </section>
   );
 }
 
-function CountdownTimer({ targetDate }) {
-  const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
-  useEffect(() => {
-    const update = () => {
-      const diff = Math.max(0, targetDate - Date.now());
-      setTime({ h: Math.floor(diff / 3600000), m: Math.floor((diff % 3600000) / 60000), s: Math.floor((diff % 60000) / 1000) });
-    };
-    update();
-    const t = setInterval(update, 1000);
-    return () => clearInterval(t);
-  }, [targetDate]);
-  const pad = n => String(n).padStart(2, '0');
+/* ── Horizontal product rail ─────────────────────────────────────────────── */
+function Rail({ products }) {
+  const ref = useRef(null);
+  const scroll = (d) => ref.current?.scrollBy({ left: d * ref.current.clientWidth * 0.85, behavior: 'smooth' });
   return (
-    <div className="countdown">
-      <div className="countdown-unit"><span>{pad(time.h)}</span><small>HRS</small></div>
-      <span className="countdown-colon">:</span>
-      <div className="countdown-unit"><span>{pad(time.m)}</span><small>MIN</small></div>
-      <span className="countdown-colon">:</span>
-      <div className="countdown-unit"><span>{pad(time.s)}</span><small>SEC</small></div>
+    <div className="rail-wrap">
+      <button type="button" className="rail-btn rail-prev" onClick={() => scroll(-1)} aria-label="Scroll left"><FiChevronLeft /></button>
+      <div className="rail" ref={ref}>
+        {products.map((p, k) => (
+          <div className="rail-item" key={p._id}><ProductCard product={p} index={k} /></div>
+        ))}
+      </div>
+      <button type="button" className="rail-btn rail-next" onClick={() => scroll(1)} aria-label="Scroll right"><FiChevronRight /></button>
     </div>
   );
 }
 
+function SectionHead({ eyebrow, title, to, icon: Icon }) {
+  return (
+    <div className="sec-head">
+      <div>
+        {eyebrow && <div className="sec-eyebrow">{Icon && <Icon aria-hidden="true" />} {eyebrow}</div>}
+        <h2 className="sec-title">{title}</h2>
+      </div>
+      {to && <Link to={to} className="sec-link">See all <FiArrowRight aria-hidden="true" /></Link>}
+    </div>
+  );
+}
+
+const GridSkeleton = ({ count = 5 }) => (
+  <div className="home-grid" aria-hidden="true">
+    {[...Array(count)].map((_, k) => <div key={k} className="skeleton card-skeleton" />)}
+  </div>
+);
+
 export default function Home() {
-  const [featured, setFeatured] = useState([]);
-  const [deals, setDeals] = useState([]);
-  const [newArrivals, setNewArrivals] = useState([]);
-  const [loadingFeatured, setLoadingFeatured] = useState(true);
-  const navigate = useNavigate();
-  const dealTarget = useRef(Date.now() + 2 * 3600000 + 23 * 60000 + 57000);
+  const [best, setBest] = useState([]);
+  const [newest, setNewest] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [shelves, setShelves] = useState({});
+  const [priceTab, setPriceTab] = useState(0);
+  const [priceItems, setPriceItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      api.get('/products/featured'),
-      api.get('/products/deals'),
+      api.get('/products', { params: { sort: '-totalSold', limit: 10 } }),
       api.get('/products/new-arrivals'),
-    ]).then(([featRes, dealRes, newRes]) => {
-      setFeatured(featRes.data.products);
-      setDeals(dealRes.data.products);
-      setNewArrivals(newRes.data.products);
-    }).catch(console.error).finally(() => setLoadingFeatured(false));
+      api.get('/products/categories'),
+      ...SHELVES.map((c) => api.get('/products', { params: { category: c, sort: '-totalSold', limit: 12 } })),
+    ])
+      .then(([b, nw, cats, ...sh]) => {
+        setBest(b.data.products);
+        setNewest(nw.data.products);
+        setCategories(cats.data.categories.sort((a, z) => z.count - a.count));
+        setShelves(Object.fromEntries(SHELVES.map((c, k) => [c, sh[k].data.products])));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    api.get('/products', { params: { 'price[lte]': PRICE_TABS[priceTab].max, sort: '-totalSold', limit: 10 } })
+      .then(({ data }) => setPriceItems(data.products))
+      .catch(() => setPriceItems([]));
+  }, [priceTab]);
+
+  const heroSlides = useMemo(() => best.slice(0, 5), [best]);
 
   return (
     <>
       <Helmet>
-        <title>PrimeGadgets — Dubai's Premier Gadget Store | Drones, Smart Watches, VR</title>
+        <title>PrimeGadgets — Everyday essentials at low prices, delivered fast in the UAE</title>
+        <meta name="description" content="Shop kitchen appliances, beauty tools, kids' art sets and more at low prices. Local UAE stock, delivery in 1 business day, cash on delivery or secure card payment." />
       </Helmet>
 
-      <div className="home-page">
-        <HeroSlider />
+      <div className="home2">
+        <div className="container">
+          <HeroSlider slides={heroSlides} />
+        </div>
 
-        {/* Trust badges */}
-        <section className="trust-section">
-          <div className="container trust-grid">
-            {TRUST_BADGES.map((b, i) => (
-              <motion.div
-                key={i} className="trust-item"
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="trust-icon">{b.icon}</div>
-                <div>
-                  <h4>{b.title}</h4>
-                  <p>{b.desc}</p>
-                </div>
-              </motion.div>
+        {/* Trust strip */}
+        <section className="trust2" aria-label="Why shop with PrimeGadgets">
+          <div className="container trust2-grid">
+            {[
+              [FiTruck, 'Fast UAE delivery', 'Local stock · 1 business day'],
+              [FiDollarSign, 'Cash on delivery', 'Pay when it arrives'],
+              [FiCreditCard, 'Secure card payment', 'Visa, Mastercard, Apple Pay via Stripe'],
+              [FiMessageCircle, 'WhatsApp support', 'Real people, quick replies'],
+            ].map(([Icon, t, d]) => (
+              <div className="trust2-item" key={t}>
+                <span className="trust2-icon"><Icon aria-hidden="true" /></span>
+                <div><strong>{t}</strong><span>{d}</span></div>
+              </div>
             ))}
           </div>
         </section>
 
-        {/* Featured Products */}
-        <section className="section featured-section">
-          <div className="container">
-            <div className="section-header">
-              <div>
-                <div className="section-eyebrow"><FiStar size={12} /> Curated for You</div>
-                <h2 className="section-title">Featured Products</h2>
-                <p className="section-sub">Handpicked by our Dubai tech experts for quality, innovation, and value.</p>
-              </div>
-              <Link to="/products?sort=-ratings" className="view-all-link">View All <FiArrowRight /></Link>
-            </div>
-            {loadingFeatured ? (
-              <div className="grid-4">
-                {[...Array(4)].map((_, i) => <div key={i} className="skeleton" style={{ height: 380 }} />)}
-              </div>
-            ) : (
-              <div className="grid-4">
-                {featured.slice(0, 8).map((p, i) => <ProductCard key={p._id} product={p} index={i} />)}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* WhatsApp CTA Section */}
-        <section className="whatsapp-cta-section">
-          <div className="container">
-            <motion.div
-              className="whatsapp-cta-card"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="whatsapp-cta-content">
-                <div className="whatsapp-cta-icon">
-                  <FiMessageCircle size={32} />
-                </div>
-                <h3 className="whatsapp-cta-title">Can't find what you need?</h3>
-                <p className="whatsapp-cta-desc">
-                  Our Dubai tech specialists are ready to help you find the perfect gadget. Ask us on WhatsApp for personalized recommendations and exclusive offers.
-                </p>
-                <button
-                  onClick={() => {
-                    const message = encodeURIComponent('Hi PrimeGadgets! I need help finding the right gadget. Can you help?');
-                    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
-                  }}
-                  className="whatsapp-cta-btn"
-                >
-                  <FiMessageCircle size={18} />
-                  Chat with Our Team
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
         {/* Categories */}
-        <section className="section">
-          <div className="container">
-            <div className="section-header">
-              <div>
-                <div className="section-eyebrow">Browse by Type</div>
-                <h2 className="section-title">Shop by Category</h2>
-              </div>
-              <Link to="/products" className="view-all-link">View All <FiArrowRight /></Link>
-            </div>
-            <div className="categories-grid">
-              {CATEGORIES.map((cat, i) => (
-                <motion.div
-                  key={cat.name}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Link to={`/products?category=${encodeURIComponent(cat.name)}`} className="category-card">
-                    <div className="cat-img-wrap">
-                      <img src={cat.img} alt={cat.name} loading="lazy" />
-                      <div className="cat-overlay" />
-                    </div>
-                    <div className="cat-info">
-                      <span className="cat-emoji">{cat.emoji}</span>
-                      <div>
-                        <h3 className="cat-name">{cat.name}</h3>
-                        <p className="cat-count">{cat.count}</p>
-                      </div>
-                    </div>
+        {categories.length > 0 && (
+          <section className="container home-sec" aria-labelledby="cat-title">
+            <div className="sec-head"><h2 id="cat-title" className="sec-title">Shop by category</h2></div>
+            <div className="cat-rail">
+              {categories.map((c) => {
+                const Icon = CATEGORY_ICONS[c.name] || FiGrid;
+                return (
+                  <Link key={c.name} to={`/products?category=${encodeURIComponent(c.name)}`} className="cat-chip">
+                    <span className="cat-chip-icon"><Icon aria-hidden="true" /></span>
+                    <span className="cat-chip-name">{c.name}</span>
+                    <span className="cat-chip-count">{c.count} items</span>
                   </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-
-
-        {/* Flash Sale Banner */}
-        {deals.length > 0 && (
-          <section className="deals-section">
-            <div className="container">
-              <div className="deals-banner">
-                <div className="deals-banner-bg" />
-                <div className="deals-left">
-                  <div className="flash-badge"><FiZap /> FLASH SALE</div>
-                  <h2 className="deals-title">Summer Tech Sale<br /><span>Up to 40% OFF</span></h2>
-                  <p>On select gadgets. Free delivery on all orders above AED 200. Limited stock — act fast!</p>
-                  <div className="deals-meta">
-                    <div className="deal-timer-label"><FiClock /> Sale ends in:</div>
-                    <CountdownTimer targetDate={dealTarget.current} />
-                  </div>
-                  <div className="deals-ctas">
-                    <Link to="/products?isDeal=true" className="btn btn-gold btn-lg">Shop Now <FiArrowRight /></Link>
-                    <Link to="/contact" className="btn btn-ghost btn-lg">Contact Us</Link>
-                  </div>
-                </div>
-                <div className="deals-products-preview">
-                  {deals.slice(0, 3).map((p, i) => (
-                    <motion.div
-                      key={p._id}
-                      className="deal-preview-card"
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                    >
-                      <img src={p.images?.[0]?.url} alt={p.name} />
-                      <div>
-                        <p className="deal-preview-name line-clamp-1">{p.name}</p>
-                        <div className="deal-preview-prices">
-                          <span className="deal-sale-price">AED {p.salePrice.toLocaleString()}</span>
-                          <span className="deal-orig-price">AED {p.price.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* New Arrivals */}
-        {newArrivals.length > 0 && (
-          <section className="section">
-            <div className="container">
-              <div className="section-header">
-                <div>
-                  <div className="section-eyebrow">Just Dropped</div>
-                  <h2 className="section-title">New Arrivals</h2>
-                </div>
-                <Link to="/products?sort=-createdAt" className="view-all-link">View All <FiArrowRight /></Link>
-              </div>
-              <div className="grid-4">
-                {newArrivals.slice(0, 4).map((p, i) => <ProductCard key={p._id} product={p} index={i} />)}
-              </div>
+        {/* Best sellers */}
+        <section className="container home-sec">
+          <SectionHead eyebrow="Most bought" icon={FiTrendingUp} title="Best sellers in the UAE" to="/products?sort=-totalSold" />
+          {loading ? <GridSkeleton /> : (
+            <div className="home-grid">
+              {best.map((p, k) => <ProductCard key={p._id} product={p} index={k} />)}
             </div>
-          </section>
-        )}
-
-        {/* Why Choose Us */}
-        <section className="why-section section">
-          <div className="container">
-            <div className="why-inner">
-              <div className="why-content">
-                <div className="section-eyebrow">4.9 ★ from 12,000+ Reviews</div>
-                <h2 className="section-title">Why 12,000+ UAE Customers Choose Us</h2>
-                <p className="why-desc">We're not just gadget sellers. We're your trusted technology partners in the UAE, providing genuine products, expert advice, and unmatched after-sales support.</p>
-                <ul className="why-list">
-                  {[
-                    ['🔒 100% Genuine, Authorized', 'Every product sourced directly from authorized distributors'],
-                    ['🚚 30+ Min Same-Day Dubai', 'Order before 3 PM for guaranteed same-day delivery in Dubai'],
-                    ['💬 24/7 WhatsApp Support', 'Real tech experts, not bots — available around the clock'],
-                    ['↩ Flexible Payment Options', 'Tabby & Tamara buy now, pay later available'],
-                    ['🌐 Shipping Across GCC', 'Delivering across UAE, Saudi Arabia, Kuwait & more'],
-                  ].map(([title, desc]) => (
-                    <li key={title} className="why-item">
-                      <span className="why-check">✓</span>
-                      <div><strong>{title}</strong><p>{desc}</p></div>
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/about" className="btn btn-primary btn-lg" style={{ marginTop: 16, width: 'fit-content' }}>
-                  Learn Our Story <FiArrowRight />
-                </Link>
-              </div>
-              <div className="why-visual">
-                <div className="why-img-grid">
-                  <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800" alt="AirPods" className="why-img why-img-1" />
-                  <img src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=300" alt="Drone" className="why-img why-img-2" />
-                  <img src="https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=300" alt="VR" className="why-img why-img-3" />
-                </div>
-                <div className="why-rating-badge">
-                  <div className="stars">{[...Array(5)].map((_, i) => <FiStar key={i} className="star-filled" />)}</div>
-                  <strong>4.9 / 5</strong>
-                  <span>from 12,000+ reviews</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </section>
 
-        {/* Testimonials */}
-        <section className="section testimonials-section">
-          <div className="container">
-            <div className="section-header" style={{ textAlign: 'center', flexDirection: 'column', alignItems: 'center' }}>
-              <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Real Reviews</div>
-              <h2 className="section-title">What UAE & GCC Customers Say</h2>
-              <p className="text-muted body-sm" style={{ marginTop: 4 }}>
-                Thousands of verified reviews across the region from real PrimeGadgets customers
-              </p>
-            </div>
-            <div className="testimonials-grid">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i} className="testimonial-card"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+        {/* Price-point shelf */}
+        <section className="price-band">
+          <div className="container home-sec">
+            <SectionHead eyebrow="Low prices, every day" icon={FiZap} title="Great finds for less" />
+            <div className="price-tabs" role="tablist" aria-label="Price range">
+              {PRICE_TABS.map((t, k) => (
+                <button
+                  key={t.label}
+                  type="button"
+                  role="tab"
+                  aria-selected={k === priceTab}
+                  className={`price-tab ${k === priceTab ? 'active' : ''}`}
+                  onClick={() => setPriceTab(k)}
                 >
-                  <div className="testimonial-stars">
-                    {[...Array(t.rating)].map((_, s) => <FiStar key={s} className="star-filled" size={14} />)}
-                  </div>
-                  <p className="testimonial-text">"{t.text}"</p>
-                  <div className="testimonial-author">
-                    <img src={t.avatar} alt={t.name} className="testimonial-avatar" />
-                    <div>
-                      <strong>{t.name}</strong>
-                      <span>{t.city}, UAE</span>
-                    </div>
-                    {t.verified && <span className="verified-badge">✓ Verified</span>}
-                  </div>
-                </motion.div>
+                  {t.label}
+                </button>
               ))}
+              <Link to={`/products?price[lte]=${PRICE_TABS[priceTab].max}&sort=-totalSold`} className="sec-link price-all">
+                See all <FiArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+            {priceItems.length ? <Rail products={priceItems} /> : <GridSkeleton />}
+          </div>
+        </section>
+
+        {/* Category shelves */}
+        {SHELVES.map((c) =>
+          shelves[c]?.length ? (
+            <section key={c} className="container home-sec">
+              <SectionHead title={c} icon={CATEGORY_ICONS[c]} eyebrow="Popular picks" to={`/products?category=${encodeURIComponent(c)}`} />
+              <Rail products={shelves[c]} />
+            </section>
+          ) : null
+        )}
+
+        {/* New arrivals */}
+        {newest.length > 0 && (
+          <section className="container home-sec">
+            <SectionHead eyebrow="Just added" title="New arrivals" to="/products?sort=-createdAt" />
+            <div className="home-grid">
+              {newest.slice(0, 5).map((p, k) => <ProductCard key={p._id} product={p} index={k} />)}
+            </div>
+          </section>
+        )}
+
+        {/* Promise + WhatsApp */}
+        <section className="container home-sec">
+          <div className="promise">
+            <div className="promise-copy">
+              <h2 className="sec-title">Shopping made simple</h2>
+              <ul className="promise-list">
+                <li><FiShield aria-hidden="true" /><div><strong>See the price you pay</strong><span>VAT and delivery are shown before you place your order.</span></div></li>
+                <li><FiTruck aria-hidden="true" /><div><strong>Shipped from inside the UAE</strong><span>No international waiting. Free delivery over AED 200.</span></div></li>
+                <li><FiCreditCard aria-hidden="true" /><div><strong>Pay your way</strong><span>Cash on delivery, or card / Apple Pay / Google Pay through Stripe.</span></div></li>
+              </ul>
+            </div>
+            <div className="promise-cta">
+              <FiMessageCircle className="promise-cta-icon" aria-hidden="true" />
+              <h3>Questions before you buy?</h3>
+              <p>Message our team on WhatsApp for product details, bulk orders or delivery questions.</p>
+              <a
+                className="btn btn-lg promise-wa"
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi PrimeGadgets! I have a question about a product.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FiMessageCircle aria-hidden="true" /> Chat on WhatsApp
+              </a>
             </div>
           </div>
         </section>

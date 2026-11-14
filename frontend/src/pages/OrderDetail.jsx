@@ -14,6 +14,15 @@ export default function OrderDetail() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const handlePay = async () => {
+    setPaying(true);
+    try {
+      const { data } = await api.post('/payments/checkout-session', { orderId: id });
+      window.location.assign(data.url);
+    } catch (err) { toast.error(err.response?.data?.message || 'Could not start payment'); setPaying(false); }
+  };
 
   useEffect(() => {
     api.get(`/orders/${id}`).then(({ data }) => setOrder(data.order)).finally(() => setLoading(false));
@@ -112,8 +121,17 @@ export default function OrderDetail() {
               </div>
               <div style={{ marginBottom: 12 }}>
                 <span style={{ fontSize: '.75rem', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>Payment</span>
-                <p style={{ fontSize: '.875rem', marginTop: 4, textTransform: 'capitalize' }}>{order.paymentMethod.replace('_', ' ')}</p>
+                <p style={{ fontSize: '.875rem', marginTop: 4 }}>
+                  {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Card (Stripe)'}
+                  {' · '}
+                  <strong style={{ color: order.isPaid ? 'var(--green)' : '#b7791f' }}>{order.isPaid ? 'Paid' : 'Unpaid'}</strong>
+                </p>
               </div>
+              {order.paymentMethod === 'card' && !order.isPaid && order.status !== 'cancelled' && (
+                <button className="btn btn-primary btn-full" style={{ justifyContent: 'center', marginBottom: 10 }} onClick={handlePay} disabled={paying}>
+                  <FiCreditCard /> {paying ? 'Opening secure payment…' : `Pay now · AED ${order.total?.toFixed(2)}`}
+                </button>
+              )}
               {['pending', 'confirmed'].includes(order.status) && (
                 <button className="btn btn-danger btn-full" style={{ justifyContent: 'center' }} onClick={handleCancel} disabled={cancelling}>
                   <FiX /> {cancelling ? 'Cancelling...' : 'Cancel Order'}

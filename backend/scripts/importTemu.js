@@ -63,12 +63,17 @@ function toProduct(raw, brand) {
     const rows = require(path.join(__dirname, '..', 'data', 'temu', file));
     for (const raw of rows) {
       const doc = toProduct(raw, brand);
-      if (!doc.name || !doc.price || !doc.images.length) { skipped++; console.log('skip', raw.id); continue; }
+      if (!doc.name || !doc.price || !/^https:/.test(doc.images[0]?.url || '')) { skipped++; console.log('skip', raw.id); continue; }
       const existing = await Product.findOne({ sku: doc.sku });
       if (existing) { Object.assign(existing, doc); await existing.save(); updated++; }
       else { await Product.create(doc); created++; }
     }
   }
+  // Feature the 8 best sellers from the imported stores (drives the home hero + featured shelf)
+  const top = await Product.find({ tags: 'temu-import' }).sort('-totalSold').limit(8).select('_id');
+  await Product.updateMany({ tags: 'temu-import' }, { isFeatured: false });
+  await Product.updateMany({ _id: { $in: top.map((t) => t._id) } }, { isFeatured: true });
+
   const byCat = await Product.aggregate([{ $group: { _id: '$category', n: { $sum: 1 } } }]);
   console.log({ created, updated, skipped, total: await Product.countDocuments() });
   console.log(byCat);

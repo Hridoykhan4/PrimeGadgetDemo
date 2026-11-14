@@ -4,7 +4,8 @@ const APIFeatures = require('../utils/apiFeatures');
 const { AppError } = require('../middleware/errorHandler');
 
 exports.getProducts = asyncHandler(async (req, res) => {
-  const totalCount = await Product.countDocuments({ isActive: true });
+  const countQuery = new APIFeatures(Product.find({ isActive: true }), req.query).search().filter();
+  const totalCount = await Product.countDocuments(countQuery.query.getFilter());
   const features = new APIFeatures(Product.find({ isActive: true }), req.query)
     .search().filter().sort().paginate(12);
   const products = await features.query;

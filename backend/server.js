@@ -33,6 +33,13 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 // Body parsing
+// Stripe webhook needs the raw body for signature verification — must be before express.json
+app.post(
+  "/api/v1/payments/webhook",
+  express.raw({ type: "application/json" }),
+  require("./controllers/paymentController").webhook,
+);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

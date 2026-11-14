@@ -6,25 +6,29 @@ import {
   FiMenu, FiX, FiChevronDown, FiPackage, FiLogOut,
   FiGrid, FiZap, FiMessageSquare
 } from 'react-icons/fi';
+import {
+  FiCoffee, FiScissors, FiGift, FiTool, FiSmartphone, FiHome as FiHomeIcon, FiSend, FiWatch,
+  FiHeadphones, FiEye, FiCamera, FiTarget, FiCpu, FiMonitor, FiTruck as FiTruckIcon,
+} from 'react-icons/fi';
 import { useAuthStore, useThemeStore } from '../../store/index.js';
 import { useSearchModalStore } from '../ui/uiStore.js';
 import './Navbar.css';
 
 const CATEGORIES = [
-  { name: 'Drones', icon: '🚁' },
-  { name: 'Smart Watches', icon: '⌚' },
-  { name: 'AirBuds & Headphones', icon: '🎧' },
-  { name: 'VR & AR', icon: '🥽' },
-  { name: 'Cameras', icon: '📷' },
-  { name: 'Gaming', icon: '🎮' },
-  { name: 'AI Devices', icon: '🤖' },
-  { name: 'Smart Home', icon: '🏠' },
-  { name: 'Laptops', icon: '💻' },
-  { name: 'Accessories', icon: '🔌' },
-  { name: 'Home & Kitchen', icon: '🍳' },
-  { name: 'Beauty & Personal Care', icon: '💇' },
-  { name: 'Kids & Toys', icon: '🧸' },
-  { name: 'Tools & Outdoor', icon: '🧰' },
+  { name: 'Home & Kitchen', icon: <FiCoffee /> },
+  { name: 'Beauty & Personal Care', icon: <FiScissors /> },
+  { name: 'Kids & Toys', icon: <FiGift /> },
+  { name: 'Tools & Outdoor', icon: <FiTool /> },
+  { name: 'Accessories', icon: <FiSmartphone /> },
+  { name: 'Smart Home', icon: <FiHomeIcon /> },
+  { name: 'Drones', icon: <FiSend /> },
+  { name: 'Smart Watches', icon: <FiWatch /> },
+  { name: 'AirBuds & Headphones', icon: <FiHeadphones /> },
+  { name: 'VR & AR', icon: <FiEye /> },
+  { name: 'Cameras', icon: <FiCamera /> },
+  { name: 'Gaming', icon: <FiTarget /> },
+  { name: 'AI Devices', icon: <FiCpu /> },
+  { name: 'Laptops', icon: <FiMonitor /> },
 ];
 
 const WHATSAPP_URL = 'https://wa.me/971500000000?text=Hello%20PrimeGadgets%2C%20I%20want%20to%20inquire%20about%20your%20products.';
@@ -75,7 +79,7 @@ export default function Navbar() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        🔥 <strong>FLASH SALE:</strong> Free delivery on orders over AED 200 | Authentic Products Guaranteed
+        <FiTruckIcon aria-hidden="true" style={{ verticalAlign: '-2px' }} /> <strong>Free delivery</strong>{' '}on orders over AED 200 · Cash on delivery · Local UAE stock
       </motion.div>
 
       <motion.header

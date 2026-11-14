@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { FiCheck, FiMapPin, FiCreditCard, FiPackage, FiChevronRight, FiLock } from 'react-icons/fi';
+import { FiCheck, FiMapPin, FiCreditCard, FiPackage, FiChevronRight, FiLock, FiDollarSign, FiShield, FiTruck } from 'react-icons/fi';
 import { useCartStore, useAuthStore } from '../store/index.js';
 import api from '../utils/api.js';
 import toast from 'react-hot-toast';
@@ -17,12 +17,13 @@ export default function Checkout() {
   const { user } = useAuthStore();
   const [step, setStep] = useState(0);
   const [placing, setPlacing] = useState(false);
+  const leaving = useRef(false);
 
   const [ship, setShip] = useState({
     fullName: user?.name || '', phone: user?.phone || '',
     street: '', area: '', city: 'Dubai', emirate: 'Dubai', country: 'UAE'
   });
-  const [payment, setPayment] = useState('cod');
+  const [payment, setPayment] = useState('card');
 
   const s = (k) => (e) => setShip(p => ({ ...p, [k]: e.target.value }));
 
@@ -48,15 +49,35 @@ export default function Checkout() {
         tax,
         total
       });
+      if (payment === 'card') {
+        try {
+          const { data: pay } = await api.post('/payments/checkout-session', { orderId: data.order._id });
+          toast.loading('Redirecting to secure payment…');
+          leaving.current = true;
+          clearCart();
+          window.location.assign(pay.url);
+          return;
+        } catch (e) {
+          leaving.current = true;
+          clearCart();
+          toast.error(e.response?.data?.message || 'Could not start card payment. You can retry from your order.');
+          navigate(`/orders/${data.order._id}`);
+          return;
+        }
+      }
+      leaving.current = true;
       clearCart();
-      toast.success('🎉 Order placed successfully!');
+      toast.success('Order placed successfully!');
       navigate(`/order/success/${data.order._id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to place order');
     } finally { setPlacing(false); }
   };
 
-  if (items.length === 0) { navigate('/cart'); return null; }
+  if (items.length === 0) {
+    if (!leaving.current) navigate('/cart');
+    return leaving.current ? <div className="loading-screen"><div className="spinner" /></div> : null;
+  }
 
   return (
     <>
@@ -124,10 +145,8 @@ export default function Checkout() {
                     <h2><FiCreditCard /> Payment Method</h2>
                     <div className="payment-options">
                       {[
-                        { id: 'cod', label: 'Cash on Delivery', sub: 'Pay when your order arrives', icon: '💵' },
-                        { id: 'card', label: 'Credit / Debit Card', sub: 'Visa, Mastercard, Amex', icon: '💳' },
-                        { id: 'apple_pay', label: 'Apple Pay', sub: 'Touch ID or Face ID', icon: '🍎' },
-                        { id: 'google_pay', label: 'Google Pay', sub: 'Pay with Google', icon: '🟢' },
+                        { id: 'card', label: 'Card, Apple Pay or Google Pay', sub: 'Visa · Mastercard · Amex — secure checkout by Stripe', icon: <FiCreditCard /> },
+                        { id: 'cod', label: 'Cash on Delivery', sub: 'Pay in cash or card when your order arrives', icon: <FiDollarSign /> },
                       ].map(opt => (
                         <label key={opt.id} className={`payment-option ${payment === opt.id ? 'selected' : ''}`}>
                           <input type="radio" name="payment" value={opt.id} checked={payment === opt.id} onChange={() => setPayment(opt.id)} />
@@ -143,20 +162,7 @@ export default function Checkout() {
                     {payment === 'card' && (
                       <div className="card-form-placeholder">
                         <div className="stripe-badge"><FiLock size={13} /> Secured by Stripe</div>
-                        <div className="form-group">
-                          <label className="form-label">Card Number</label>
-                          <input className="input" placeholder="1234 5678 9012 3456" maxLength={19} />
-                        </div>
-                        <div className="checkout-form-grid">
-                          <div className="form-group">
-                            <label className="form-label">Expiry</label>
-                            <input className="input" placeholder="MM / YY" maxLength={7} />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">CVV</label>
-                            <input className="input" placeholder="•••" maxLength={4} type="password" />
-                          </div>
-                        </div>
+                        <p className="body-sm text-muted">After you place the order you'll be taken to Stripe's secure payment page. PrimeGadgets never sees or stores your card details.</p>
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: 12 }}>
@@ -178,7 +184,7 @@ export default function Checkout() {
                       </div>
                       <div className="review-block">
                         <div className="review-block-header"><FiCreditCard size={14} /><span>Payment</span><button className="edit-link" onClick={() => setStep(1)}>Edit</button></div>
-                        <p style={{ textTransform: 'capitalize' }}>{payment === 'cod' ? 'Cash on Delivery' : payment.replace('_', ' ')}</p>
+                        <p>{payment === 'cod' ? 'Cash on Delivery' : 'Card / Apple Pay / Google Pay (Stripe)'}</p>
                       </div>
                     </div>
                     <div className="review-items">
@@ -196,10 +202,10 @@ export default function Checkout() {
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                       <button className="btn btn-secondary" onClick={() => setStep(1)}>← Back</button>
                       <button className="btn btn-primary btn-lg" onClick={handlePlaceOrder} disabled={placing} style={{ flex: 1, justifyContent: 'center', minWidth: 200 }}>
-                        {placing ? <><div className="spinner spinner-sm" /> Placing...</> : `Place Order · AED ${total.toFixed(2)}`}
+                        {placing ? <><div className="spinner spinner-sm" /> Placing...</> : payment === 'card' ? `Pay Securely · AED ${total.toFixed(2)}` : `Place Order · AED ${total.toFixed(2)}`}
                       </button>
                     </div>
-                    <p className="secure-note"><FiLock size={12} /> Your payment info is encrypted and secure</p>
+                    <p className="secure-note"><FiLock size={12} /> {payment === 'card' ? 'Card details are entered on Stripe, never on our site' : 'Pay when your order arrives'}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -225,9 +231,9 @@ export default function Checkout() {
                 </div>
                 <div className="os-total"><span>Total</span><strong>AED {total.toFixed(2)}</strong></div>
                 <div className="os-badges">
-                  <span>🔒 SSL Secure</span>
-                  <span>✅ Verified Store</span>
-                  <span>🚀 Fast Delivery</span>
+                  <span><FiLock size={11} /> Secure checkout</span>
+                  <span><FiShield size={11} /> Local UAE stock</span>
+                  <span><FiTruck size={11} /> 1-day delivery</span>
                 </div>
               </div>
             </div>
@@ -254,7 +260,7 @@ export default function Checkout() {
         .payment-option:hover { border-color:var(--blue); background:rgba(0,102,255,.04); }
         .payment-option.selected { border-color:var(--blue); background:rgba(0,102,255,.06); }
         .payment-option input { display:none; }
-        .payment-icon { font-size:1.5rem; flex-shrink:0; }
+        .payment-icon { font-size:1.35rem; flex-shrink:0; width:44px; height:44px; border-radius:12px; background:rgba(0,102,255,.08); color:var(--blue); display:flex; align-items:center; justify-content:center; }
         .payment-info { flex:1; display:flex; flex-direction:column; gap:2px; }
         .payment-info strong { font-size:.9rem; font-weight:600; color:var(--text); }
         .payment-info span { font-size:.78rem; color:var(--text-3); }
@@ -287,7 +293,7 @@ export default function Checkout() {
         .os-row { display:flex; justify-content:space-between; font-size:.875rem; color:var(--text-2); }
         .os-total { display:flex; justify-content:space-between; font-size:1.05rem; font-weight:700; padding-top:12px; border-top:1px solid var(--border); margin-bottom:20px; }
         .os-badges { display:flex; gap:8px; flex-wrap:wrap; }
-        .os-badges span { font-size:.72rem; color:var(--text-3); background:var(--surface-2); padding:4px 10px; border-radius:var(--r-full); }
+        .os-badges span { display:inline-flex; align-items:center; gap:5px;  font-size:.72rem; color:var(--text-3); background:var(--surface-2); padding:4px 10px; border-radius:var(--r-full); }
         @media(max-width:900px){ .checkout-layout{grid-template-columns:1fr;} .checkout-sidebar{order:-1;} .order-summary-card{position:static;} }
         @media(max-width:600px){ .checkout-form-grid,.review-blocks{grid-template-columns:1fr;} .checkout-steps span{display:none;} }
       `}</style>
