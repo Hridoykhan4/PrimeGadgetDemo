@@ -79,7 +79,7 @@ export default function Navbar() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <FiTruckIcon aria-hidden="true" style={{ verticalAlign: '-2px' }} /> <strong>Free delivery</strong>{' '}on orders over AED 200 · Cash on delivery · Local UAE stock
+        <FiTruckIcon aria-hidden="true" style={{ verticalAlign: '-2px' }} /> <strong>Free delivery</strong>&nbsp;on orders over AED 200 · Cash on delivery · Local UAE stock
       </motion.div>
 
       <motion.header
