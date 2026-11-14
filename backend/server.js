@@ -24,11 +24,16 @@ app.use(
   }),
 );
 
+// Product images (served before the API rate limiter; heavily cached)
+app.use("/media", require("./routes/media"));
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
-  message: "Too many requests",
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests, please slow down" },
 });
 app.use("/api", limiter);
 
@@ -101,6 +106,7 @@ app.use("/api/v1/reviews", require("./routes/reviews"));
 app.use("/api/v1/payments", require("./routes/payments"));
 app.use("/api/v1/stats", require("./routes/stats"));
 app.use("/api/v1/upload", require("./routes/upload"));
+app.use("/api/v1/messages", require("./routes/messages"));
 
 // Health
 app.get("/api/v1/health", (req, res) =>
@@ -118,6 +124,14 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () =>
   console.log(`🚀 PrimeGadgets API → http://localhost:${PORT}`.green.bold),
 );
+
+// Release stock held by card orders that were never paid
+const { sweepAbandonedCardOrders } = require("./controllers/orderController");
+setInterval(() => {
+  sweepAbandonedCardOrders()
+    .then((n) => n && console.log(`Released ${n} unpaid card order(s)`))
+    .catch((e) => console.error("sweep failed:", e.message));
+}, 15 * 60 * 1000).unref();
 
 process.on("unhandledRejection", (err) => {
   console.log(`💥 ${err.message}`.red);

@@ -27,7 +27,7 @@ export function Login() {
       <Helmet><title>Login — PrimeGadgets</title></Helmet>
       <div className="auth-page">
         <motion.div className="auth-card" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="auth-logo"><div className="logo-icon" style={{ width: 44, height: 44, fontSize: '1.3rem' }}><FiZap /></div><div><div className="logo-prime" style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700 }}>PrimeGadgets</div><div className="logo-gadgets" style={{ fontFamily: 'var(--font-display)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue)' }}>Dubai</div></div></div>
+          <div className="auth-logo"><div className="logo-icon" style={{ width: 44, height: 44, fontSize: '1.3rem' }}><FiZap /></div><div><div className="logo-prime" style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700 }}>PrimeGadgets</div><div className="logo-gadgets" style={{ fontFamily: 'var(--font-display)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue)' }}>UAE</div></div></div>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-sub">Sign in to your PrimeGadgets account</p>
           <form onSubmit={handleSubmit} className="auth-form">
@@ -43,6 +43,7 @@ export function Login() {
             <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
           </form>
           <p className="auth-switch">Don't have an account? <Link to="/register">Create one →</Link></p>
+          <p className="auth-switch" style={{ marginTop: 6 }}>Just want to buy? <Link to="/checkout">Check out as a guest</Link> · <Link to="/track">Track an order</Link></p>
         </motion.div>
       </div>
     </>

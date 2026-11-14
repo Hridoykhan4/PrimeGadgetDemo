@@ -12,7 +12,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <App />
         <Toaster
-          position="top-right"
+          position="bottom-center"
+          containerStyle={{ bottom: 84 }}
           gutter={12}
           toastOptions={{
             duration: 3500,

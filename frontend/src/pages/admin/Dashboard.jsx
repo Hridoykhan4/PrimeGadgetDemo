@@ -1,135 +1,177 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FiPackage, FiUsers, FiDollarSign, FiShoppingBag, FiAlertTriangle, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  FiDollarSign, FiShoppingBag, FiUsers, FiTrendingUp, FiArrowRight, FiClock, FiTruck, FiMail, FiAlertTriangle, FiPackage, FiRefreshCw,
+} from 'react-icons/fi';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import AdminLayout from './AdminLayout.jsx';
 import api from '../../utils/api.js';
+import { fmtAED } from '../../store/index.js';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const STATUS_COLORS = { pending: '#F5A623', confirmed: '#0066FF', processing: '#0066FF', shipped: '#7C3AED', delivered: '#00C853', cancelled: '#FF3B3B' };
+const aed = (n) => `AED ${fmtAED(n)}`;
+const STATUS_LABEL = { pending: 'New', confirmed: 'Confirmed', processing: 'Packing', shipped: 'Shipped', out_for_delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' };
+
+const ChartTip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', fontSize: '.8rem', boxShadow: 'var(--shadow)' }}>
+      <strong style={{ display: 'block', marginBottom: 4 }}>{label}</strong>
+      {payload.map((p) => <div key={p.dataKey}>{p.dataKey === 'revenue' ? `Revenue: ${aed(p.value)}` : `Orders: ${p.value}`}</div>)}
+    </div>
+  );
+};
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null);
+  const [s, setS] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    api.get('/stats').then(({ data }) => setStats(data.stats)).catch(console.error).finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <AdminLayout><div className="loading-screen"><div className="spinner" /></div></AdminLayout>;
-
-  const chartData = stats?.last6Months?.map(m => ({ month: MONTHS[m._id.m - 1], revenue: m.revenue, orders: m.count })) || [];
-  const statusData = stats?.statusBreakdown?.map(s => ({ name: s._id, count: s.count })) || [];
-
-  const cards = [
-    { label: 'Total Revenue', value: `AED ${stats?.totalRevenue?.toLocaleString() || 0}`, icon: FiDollarSign, color: '#00C853', bg: 'rgba(0,200,83,.1)' },
-    { label: 'Total Orders', value: stats?.totalOrders || 0, icon: FiShoppingBag, color: '#0066FF', bg: 'rgba(0,102,255,.1)' },
-    { label: 'Products', value: stats?.totalProducts || 0, icon: FiPackage, color: '#7C3AED', bg: 'rgba(124,58,237,.1)' },
-    { label: 'Customers', value: stats?.totalUsers || 0, icon: FiUsers, color: '#F5A623', bg: 'rgba(245,166,35,.1)' },
-  ];
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '10px 16px', fontSize: '.82rem' }}><p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>{payload.map(p => <p key={p.name} style={{ color: p.color }}>{p.name}: {p.name === 'revenue' ? `AED ${p.value?.toLocaleString()}` : p.value}</p>)}</div>;
+  const load = () => {
+    setLoading(true); setError(false);
+    api.get('/stats').then(({ data }) => setS(data.stats)).catch(() => setError(true)).finally(() => setLoading(false));
   };
+  useEffect(load, []);
+
+  const chart = (s?.last14 || []).map((d) => ({
+    ...d, label: new Date(`${d.date}T12:00:00`).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' }),
+  }));
+  const split = (s?.paymentSplit || []).map((p) => ({ name: p._id === 'cod' ? 'Cash on delivery' : 'Card', value: p.count, total: p.total }));
+  const SPLIT_COLORS = ['#3d8bff', '#22c55e'];
 
   return (
     <AdminLayout>
-      <Helmet><title>Admin Dashboard — PrimeGadgets</title></Helmet>
-      <div style={{ maxWidth: 1400 }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700, marginBottom: 4 }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-3)', fontSize: '.875rem' }}>Welcome back! Here's what's happening at PrimeGadgets.</p>
+      <Helmet><title>Dashboard — PrimeGadgets Admin</title></Helmet>
+      <div className="adm-head">
+        <div>
+          <h1 className="adm-title">Dashboard</h1>
+          <p className="adm-sub">{new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dubai' })} · Dubai time</p>
         </div>
-
-        {/* Stat cards */}
-        <div className="grid-4" style={{ marginBottom: 28 }}>
-          {cards.map((c, i) => (
-            <motion.div key={c.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 'var(--r-lg)', background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <c.icon size={22} style={{ color: c.color }} />
-              </div>
-              <div>
-                <p style={{ fontSize: '.78rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>{c.label}</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 700, lineHeight: 1 }}>{c.value}</p>
-              </div>
-            </motion.div>
-          ))}
+        <div className="adm-tools">
+          <button className="btn btn-secondary btn-sm" onClick={load}><FiRefreshCw /> Refresh</button>
+          <Link to="/admin/orders" className="btn btn-primary btn-sm"><FiShoppingBag /> Manage orders</Link>
         </div>
+      </div>
 
-        {/* Charts */}
-        <div className="grid-2" style={{ marginBottom: 28 }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24 }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, marginBottom: 20 }}>Revenue (Last 6 Months)</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="month" stroke="var(--text-3)" fontSize={11} />
-                <YAxis stroke="var(--text-3)" fontSize={11} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="revenue" stroke="var(--blue)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24 }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, marginBottom: 20 }}>Orders by Status</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={statusData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" stroke="var(--text-3)" fontSize={11} />
-                <YAxis dataKey="name" type="category" stroke="var(--text-3)" fontSize={11} width={100} tickFormatter={v => v.replace('_', ' ')} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" fill="var(--blue)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {error && <div className="adm-card adm-empty">Could not load stats. <button className="btn btn-sm btn-secondary" onClick={load}>Try again</button></div>}
+      {loading && !s && <div className="adm-kpis">{[0, 1, 2, 3].map((k) => <div key={k} className="adm-kpi skeleton" style={{ height: 116 }} />)}</div>}
 
-        {/* Bottom row */}
-        <div className="grid-2">
-          {/* Top products */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700 }}>Top Products</h3>
-              <Link to="/admin/products" style={{ fontSize: '.8rem', color: 'var(--blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>View all <FiArrowRight size={12} /></Link>
-            </div>
-            {stats?.topProducts?.map((p, i) => (
-              <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                <span style={{ width: 22, fontFamily: 'var(--font-mono)', fontSize: '.78rem', color: 'var(--text-3)', flexShrink: 0 }}>#{i + 1}</span>
-                <img src={p.image} alt={p.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
-                  <p style={{ fontSize: '.75rem', color: 'var(--text-3)' }}>{p.sold} sold</p>
-                </div>
-                <strong style={{ fontFamily: 'var(--font-display)', fontSize: '.875rem', color: 'var(--blue)', flexShrink: 0 }}>AED {p.revenue?.toLocaleString()}</strong>
+      {s && (
+        <>
+          <div className="adm-kpis">
+            {[
+              { label: 'Revenue today', value: aed(s.revenueToday), sub: <>Last 30 days <b>{aed(s.revenue30)}</b></>, icon: FiDollarSign, c: '#22c55e' },
+              { label: 'Orders today', value: s.ordersToday, sub: <>All time <b>{s.totalOrders}</b></>, icon: FiShoppingBag, c: '#3d8bff' },
+              { label: 'Avg. order value', value: aed(s.avgOrderValue), sub: <>Total revenue <b>{aed(s.totalRevenue)}</b></>, icon: FiTrendingUp, c: '#a855f7' },
+              { label: 'Customers', value: s.totalCustomers, sub: <>Registered accounts <b>{s.totalUsers}</b></>, icon: FiUsers, c: '#f59e0b' },
+            ].map((k) => (
+              <div className="adm-kpi" key={k.label}>
+                <div className="adm-kpi-top"><span>{k.label}</span><span className="adm-kpi-ic" style={{ background: `${k.c}1f`, color: k.c }}><k.icon /></span></div>
+                <strong>{k.value}</strong>
+                <small>{k.sub}</small>
               </div>
             ))}
           </div>
 
-          {/* Recent orders */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700 }}>Recent Orders</h3>
-              <Link to="/admin/orders" style={{ fontSize: '.8rem', color: 'var(--blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>View all <FiArrowRight size={12} /></Link>
-            </div>
-            {stats?.recentOrders?.map((order) => {
-              const sc = STATUS_COLORS[order.status] || 'var(--text-3)';
-              return (
-                <div key={order._id} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, padding: '10px 12px', borderRadius: 'var(--r-lg)', background: 'var(--surface-2)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '.82rem', fontWeight: 700, fontFamily: 'var(--font-mono)', marginBottom: 2 }}>{order.orderNumber}</p>
-                    <p style={{ fontSize: '.75rem', color: 'var(--text-3)' }}>{order.user?.name}</p>
-                  </div>
-                  <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '2px 9px', borderRadius: 'var(--r-full)', background: `${sc}18`, color: sc, textTransform: 'capitalize', flexShrink: 0 }}>{order.status}</span>
-                  <strong style={{ fontSize: '.875rem', fontFamily: 'var(--font-display)', flexShrink: 0 }}>AED {order.total?.toLocaleString()}</strong>
-                </div>
-              );
-            })}
+          <div className="adm-alerts">
+            <Link to="/admin/orders?status=pending" className="adm-alert warn"><FiClock /><span><strong>{s.pendingOrders}</strong> new orders to confirm</span></Link>
+            <Link to="/admin/orders?status=confirmed" className="adm-alert info"><FiTruck /><span><strong>{s.toShip}</strong> orders to pack &amp; ship</span></Link>
+            <Link to="/admin/messages" className="adm-alert info"><FiMail /><span><strong>{s.unreadMessages}</strong> unread messages</span></Link>
+            <Link to="/admin/products?status=low" className={`adm-alert ${s.lowStock?.length ? 'warn' : 'ok'}`}><FiAlertTriangle /><span><strong>{s.lowStock?.length || 0}</strong> products low on stock</span></Link>
           </div>
-        </div>
-      </div>
+
+          <div className="adm-grid-2">
+            <div className="adm-card">
+              <div className="adm-card-h"><h3>Revenue · last 14 days</h3><span className="muted">Paid + cash-on-delivery orders</span></div>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={chart} margin={{ left: -10, right: 8, top: 8 }}>
+                  <defs>
+                    <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3d8bff" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#3d8bff" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="label" stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                  <YAxis stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v)} />
+                  <Tooltip content={<ChartTip />} />
+                  <Area type="monotone" dataKey="revenue" stroke="#3d8bff" strokeWidth={2.5} fill="url(#rev)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="adm-card">
+              <div className="adm-card-h"><h3>Payment methods</h3></div>
+              {split.length ? (
+                <>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie data={split} dataKey="value" nameKey="name" innerRadius={52} outerRadius={78} paddingAngle={3} stroke="none">
+                        {split.map((_, i) => <Cell key={i} fill={SPLIT_COLORS[i % 2]} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="adm-rows">
+                    {split.map((p, i) => (
+                      <div key={p.name} className="adm-row">
+                        <span style={{ width: 10, height: 10, borderRadius: 3, background: SPLIT_COLORS[i % 2] }} />
+                        <div className="adm-row-main"><strong>{p.name}</strong><span>{p.value} orders</span></div>
+                        <strong>{aed(p.total)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : <div className="adm-empty">No orders yet</div>}
+            </div>
+          </div>
+
+          <div className="adm-grid-eq">
+            <div className="adm-card">
+              <div className="adm-card-h"><h3>Latest orders</h3><Link to="/admin/orders">View all <FiArrowRight /></Link></div>
+              <div className="adm-rows">
+                {s.recentOrders.length ? s.recentOrders.map((o) => (
+                  <Link key={o._id} to={`/admin/orders?open=${o._id}`} className="adm-row">
+                    <div className="adm-row-main">
+                      <strong className="mono">{o.orderNumber}</strong>
+                      <span>{o.shippingAddress?.fullName || o.user?.name} · {o.shippingAddress?.emirate} · {new Date(o.createdAt).toLocaleString('en-AE', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                    </div>
+                    <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] || o.status}</span>
+                    <strong style={{ whiteSpace: 'nowrap' }}>{aed(o.total)}</strong>
+                  </Link>
+                )) : <div className="adm-empty">No orders yet — share your store link to get the first one.</div>}
+              </div>
+            </div>
+
+            <div className="adm-card">
+              <div className="adm-card-h"><h3>Top products</h3><Link to="/admin/products">Products <FiArrowRight /></Link></div>
+              <div className="adm-rows">
+                {s.topProducts.length ? s.topProducts.map((p, i) => (
+                  <div key={p._id} className="adm-row">
+                    <span className="muted" style={{ width: 18 }}>{i + 1}</span>
+                    <img src={p.image} alt="" className="adm-thumb" />
+                    <div className="adm-row-main"><strong>{p.name}</strong><span>{p.sold} sold</span></div>
+                    <strong style={{ whiteSpace: 'nowrap' }}>{aed(p.revenue)}</strong>
+                  </div>
+                )) : <div className="adm-empty">Sales will appear here</div>}
+              </div>
+              {s.lowStock?.length > 0 && (
+                <>
+                  <div className="adm-card-h" style={{ marginTop: 18 }}><h3>Low stock</h3></div>
+                  <div className="adm-rows">
+                    {s.lowStock.map((p) => (
+                      <Link key={p._id} to={`/admin/products/${p._id}/edit`} className="adm-row">
+                        <img src={p.images?.[0]?.url} alt="" className="adm-thumb" />
+                        <div className="adm-row-main"><strong>{p.name}</strong></div>
+                        <span className={`pill ${p.stock === 0 ? 'bad' : 'unpaid'}`}><FiPackage /> {p.stock} left</span>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 }

@@ -35,7 +35,7 @@ export default function Register() {
             </div>
           </div>
           <h1 className="auth-title">Create Account</h1>
-          <p className="auth-sub">Join 12,000+ UAE gadget enthusiasts</p>
+          <p className="auth-sub">Optional — save your details and see all your orders in one place</p>
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
               <label className="form-label">Full Name</label>

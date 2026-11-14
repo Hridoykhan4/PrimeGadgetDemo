@@ -17,3 +17,16 @@ exports.authorize = (...roles) => (req, res, next) => {
   if (!roles.includes(req.user.role)) return next(new AppError(`Access denied for role: ${req.user.role}`, 403));
   next();
 };
+
+// Attaches req.user when a valid token is sent, but never blocks the request (guest checkout, guest reviews).
+exports.optionalAuth = async (req, res, next) => {
+  try {
+    const h = req.headers.authorization;
+    if (h?.startsWith('Bearer ')) {
+      const decoded = jwt.verify(h.split(' ')[1], process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      if (user && user.isActive) req.user = user;
+    }
+  } catch { /* invalid/expired token → treat as guest */ }
+  next();
+};

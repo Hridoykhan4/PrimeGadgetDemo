@@ -13,6 +13,22 @@ exports.getProducts = asyncHandler(async (req, res) => {
   res.json({ success: true, count: products.length, total: totalCount, products });
 });
 
+// GET /products/admin/all — admin list incl. hidden products, with search + status filter
+exports.adminList = asyncHandler(async (req, res) => {
+  const filter = {};
+  if (req.query.status === 'active') filter.isActive = true;
+  if (req.query.status === 'hidden') filter.isActive = false;
+  if (req.query.status === 'low') { filter.isActive = true; filter.stock = { $lte: 5 }; }
+  if (req.query.category) filter.category = req.query.category;
+  if (req.query.q) {
+    const q = String(req.query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [{ name: { $regex: q, $options: 'i' } }, { sku: { $regex: q, $options: 'i' } }, { brand: { $regex: q, $options: 'i' } }];
+  }
+  const products = await Product.find(filter).sort('-createdAt').limit(500)
+    .select('name images price salePrice stock category brand sku isActive isFeatured isBestSeller ratings numReviews totalSold createdAt');
+  res.json({ success: true, total: products.length, products });
+});
+
 exports.getFeatured = asyncHandler(async (req, res) => {
   const products = await Product.find({ isFeatured: true, isActive: true }).limit(8);
   res.json({ success: true, products });
@@ -24,7 +40,7 @@ exports.getDeals = asyncHandler(async (req, res) => {
 });
 
 exports.getNewArrivals = asyncHandler(async (req, res) => {
-  const products = await Product.find({ isActive: true }).sort('-createdAt').limit(8);
+  const products = await Product.find({ isActive: true }).sort('-createdAt').limit(10);
   res.json({ success: true, products });
 });
 
@@ -36,11 +52,14 @@ exports.getBestSellers = asyncHandler(async (req, res) => {
 exports.searchSuggestions = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q || q.length < 2) return res.json({ success: true, suggestions: [] });
-  const products = await Product.find({
-    isActive: true,
-    name: { $regex: q, $options: 'i' }
-  }).select('name images price salePrice category brand slug').limit(6);
-  res.json({ success: true, suggestions: products });
+  const safe = String(q).slice(0, 60).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const words = safe.split(/\s+/).filter(Boolean);
+  const filter = { isActive: true, $and: words.map((w) => ({ $or: [{ name: { $regex: w, $options: 'i' } }, { category: { $regex: w, $options: 'i' } }, { tags: { $regex: w, $options: 'i' } }] })) };
+  const [products, cats] = await Promise.all([
+    Product.find(filter).select('name images price salePrice category brand slug').sort('-totalSold').limit(6),
+    Product.aggregate([{ $match: filter }, { $group: { _id: '$category', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 4 }]),
+  ]);
+  res.json({ success: true, suggestions: products, categories: cats.map((c) => ({ name: c._id, count: c.count })) });
 });
 
 exports.getProduct = asyncHandler(async (req, res, next) => {
@@ -52,7 +71,8 @@ exports.getProduct = asyncHandler(async (req, res, next) => {
 
 exports.getRelated = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
-  const related = await Product.find({ category: product.category, _id: { $ne: product._id }, isActive: true }).limit(4);
+  if (!product) return res.json({ success: true, products: [] });
+  const related = await Product.find({ category: product.category, _id: { $ne: product._id }, isActive: true }).sort('-isBestSeller,-createdAt').limit(12);
   res.json({ success: true, products: related });
 });
 
@@ -73,7 +93,12 @@ exports.createProduct = asyncHandler(async (req, res) => {
 });
 
 exports.updateProduct = asyncHandler(async (req, res, next) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const body = { ...req.body };
+  ['_id', 'createdAt', 'updatedAt', 'slug', 'reviews', 'id', 'ratings', 'numReviews'].forEach((k) => delete body[k]);
+  if (body.salePrice !== undefined && body.price !== undefined) {
+    body.discountPercent = body.salePrice > 0 && body.salePrice < body.price ? Math.round(((body.price - body.salePrice) / body.price) * 100) : 0;
+  }
+  const product = await Product.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true });
   if (!product) return next(new AppError('Product not found', 404));
   res.json({ success: true, product });
 });
@@ -85,9 +110,11 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
 });
 
 exports.getCategories = asyncHandler(async (req, res) => {
-  const cats = await Product.distinct('category', { isActive: true });
-  const withCount = await Promise.all(cats.map(async cat => ({
-    name: cat, count: await Product.countDocuments({ category: cat, isActive: true })
-  })));
-  res.json({ success: true, categories: withCount });
+  const rows = await Product.aggregate([
+    { $match: { isActive: true } },
+    { $group: { _id: '$category', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+  ]);
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json({ success: true, categories: rows.map((r) => ({ name: r._id, count: r.count })) });
 });

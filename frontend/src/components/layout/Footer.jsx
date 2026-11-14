@@ -1,77 +1,77 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiZap, FiMapPin, FiPhone, FiMail, FiFacebook, FiTwitter, FiInstagram, FiYoutube } from 'react-icons/fi';
+import { FiZap, FiMail, FiMessageCircle, FiTruck, FiLock, FiDollarSign, FiMapPin } from 'react-icons/fi';
+import { useCatalogStore } from '../../store/catalog.js';
+import { categoryHref } from '../../utils/categories.jsx';
 import './Footer.css';
 
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@primegadgets.ae';
+
 export default function Footer() {
+  const { categories, load } = useCatalogStore();
+  useEffect(() => { load(); }, [load]);
+
   return (
     <footer className="footer">
+      <div className="footer-perks">
+        <div className="container footer-perks-grid">
+          <div><FiTruck /><span><strong>Free delivery</strong> over AED 200</span></div>
+          <div><FiDollarSign /><span><strong>Cash on delivery</strong> across the UAE</span></div>
+          <div><FiLock /><span><strong>Secure card payment</strong> by Stripe</span></div>
+          <div><FiMessageCircle /><span><strong>WhatsApp support</strong> in Arabic & English</span></div>
+        </div>
+      </div>
       <div className="footer-top">
         <div className="container">
           <div className="footer-grid">
-            {/* Brand */}
             <div className="footer-brand">
               <Link to="/" className="footer-logo">
                 <div className="footer-logo-icon"><FiZap /></div>
                 <div><span className="logo-prime">Prime</span><span className="logo-gadgets">Gadgets</span></div>
               </Link>
-              <p className="footer-desc">Dubai's premier destination for premium gadgets, drones, smart devices, and next-gen electronics. Trusted by 12,000+ UAE customers.</p>
-              <div className="footer-socials">
-                <a href="#!" className="social-link"><FiFacebook /></a>
-                <a href="#!" className="social-link"><FiTwitter /></a>
-                <a href="#!" className="social-link"><FiInstagram /></a>
-                <a href="#!" className="social-link"><FiYoutube /></a>
-              </div>
+              <p className="footer-desc">Everyday essentials, home and kitchen gear, beauty tools and toys at low prices — shipped from UAE stock to all 7 emirates.</p>
             </div>
 
             <div className="footer-col">
               <h4>Shop</h4>
               <ul>
-                {['Drones','Smart Watches','AirBuds & Headphones','VR & AR','Cameras','Gaming'].map(c => (
-                  <li key={c}><Link to={`/products?category=${encodeURIComponent(c)}`}>{c}</Link></li>
+                {categories.slice(0, 6).map((c) => (
+                  <li key={c.name}><Link to={categoryHref(c.name)}>{c.name}</Link></li>
                 ))}
+                <li><Link to="/products">All products</Link></li>
               </ul>
             </div>
 
             <div className="footer-col">
-              <h4>Account</h4>
+              <h4>Help</h4>
               <ul>
-                <li><Link to="/profile">My Profile</Link></li>
-                <li><Link to="/orders">My Orders</Link></li>
-                <li><Link to="/wishlist">Wishlist</Link></li>
+                <li><Link to="/track">Track your order</Link></li>
                 <li><Link to="/cart">Cart</Link></li>
-                <li><Link to="/register">Create Account</Link></li>
+                <li><Link to="/wishlist">Wishlist</Link></li>
+                <li><Link to="/contact">Contact us</Link></li>
+                <li><Link to="/about">About us</Link></li>
               </ul>
             </div>
 
             <div className="footer-col">
               <h4>Contact</h4>
               <ul className="contact-list">
-                <li><FiMapPin /> Shop 12, Dubai Mall, Financial Centre Rd, Downtown Dubai</li>
-                <li><FiPhone /> +971 4 000 0000</li>
-                <li><FiMail /> hello@primegadgets.ae</li>
+                <li><FiMessageCircle /> <a href={`https://wa.me/${WA_NUMBER}`} target="_blank" rel="noopener noreferrer">WhatsApp us</a></li>
+                <li><FiMail /> <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></li>
+                <li><FiMapPin /> Delivering across the UAE</li>
               </ul>
-              <div className="footer-trust">
-                <span>🔒 SSL Secured</span>
-                <span>⚡ Same-day Dubai</span>
-                <span>↩ 30-day Returns</span>
-              </div>
             </div>
           </div>
         </div>
       </div>
       <div className="footer-bottom">
         <div className="container footer-bottom-inner">
-          <p>© {new Date().getFullYear()} PrimeGadgets Dubai. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} PrimeGadgets. All rights reserved.</p>
           <div className="footer-payment">
-            {['Visa','Mastercard','Apple Pay','Google Pay','COD'].map(p => (
+            {['Visa', 'Mastercard', 'Apple Pay', 'Google Pay', 'Cash on delivery'].map((p) => (
               <span key={p} className="payment-chip">{p}</span>
             ))}
-          </div>
-          <div className="footer-legal">
-            <a href="#!">Privacy</a>
-            <a href="#!">Terms</a>
-            <a href="#!">Returns</a>
           </div>
         </div>
       </div>

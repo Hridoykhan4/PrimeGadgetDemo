@@ -1,62 +1,85 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiHome, FiMenu, FiX, FiZap, FiBarChart2 } from 'react-icons/fi';
-import { useAuthStore } from '../../store/index.js';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import {
+  FiBarChart2, FiPackage, FiShoppingBag, FiUsers, FiHome, FiMenu, FiZap, FiStar, FiMail, FiSun, FiMoon, FiPlus, FiLogOut,
+} from 'react-icons/fi';
+import { useAuthStore, useThemeStore } from '../../store/index.js';
+import { create } from 'zustand';
+import api from '../../utils/api.js';
+import './admin.css';
 
-const NAV = [
-  { path: '/admin', icon: FiBarChart2, label: 'Dashboard', exact: true },
-  { path: '/admin/products', icon: FiPackage, label: 'Products' },
-  { path: '/admin/orders', icon: FiShoppingBag, label: 'Orders' },
-  { path: '/admin/users', icon: FiUsers, label: 'Users' },
-];
+// Badge counts shared across admin pages (refreshed every minute)
+export const useAdminBadges = create((set) => ({
+  pending: 0, messages: 0,
+  refresh: async () => {
+    try {
+      const [o, m] = await Promise.all([
+        api.get('/orders', { params: { status: 'pending', limit: 1 } }),
+        api.get('/messages', { params: { unread: 1 } }),
+      ]);
+      set({ pending: o.data.total || 0, messages: m.data.messages?.length || 0 });
+    } catch {}
+  },
+}));
 
 export default function AdminLayout({ children }) {
+  const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
+  const { pending, messages, refresh } = useAdminBadges();
+  const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuthStore();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const isActive = (item) => item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path);
+  useEffect(() => { refresh(); const t = setInterval(refresh, 60000); return () => clearInterval(t); }, [refresh]);
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  const NAV = [
+    { to: '/admin', icon: FiBarChart2, label: 'Dashboard', end: true },
+    { to: '/admin/orders', icon: FiShoppingBag, label: 'Orders', count: pending },
+    { to: '/admin/products', icon: FiPackage, label: 'Products' },
+    { to: '/admin/reviews', icon: FiStar, label: 'Reviews' },
+    { to: '/admin/messages', icon: FiMail, label: 'Messages', count: messages },
+    { to: '/admin/users', icon: FiUsers, label: 'Customers' },
+  ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Sidebar */}
-      <aside style={{ width: collapsed ? 68 : 240, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 200, transition: 'width .25s cubic-bezier(.25,.46,.45,.94)', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', minHeight: 68 }}>
-          {!collapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><FiZap size={16} /></div>
-              <div><div style={{ fontFamily: 'var(--font-display)', fontSize: '.85rem', fontWeight: 700, lineHeight: 1.1 }}>Prime<span style={{ color: 'var(--blue)' }}>Gadgets</span></div><div style={{ fontSize: '.65rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Admin</div></div>
-            </div>
-          )}
-          <button onClick={() => setCollapsed(c => !c)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', cursor: 'pointer', padding: 6, borderRadius: 'var(--r-sm)', marginLeft: collapsed ? 'auto' : 0 }}>
-            {collapsed ? <FiMenu size={18} /> : <FiX size={18} />}
-          </button>
-        </div>
-
-        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {NAV.map(item => (
-            <Link key={item.path} to={item.path} title={collapsed ? item.label : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 'var(--r)', background: isActive(item) ? 'var(--blue)' : 'none', color: isActive(item) ? '#fff' : 'var(--text-2)', fontWeight: 600, fontSize: '.875rem', transition: 'all .15s', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              <item.icon size={17} style={{ flexShrink: 0 }} />
-              {!collapsed && item.label}
-            </Link>
+    <div className="adm">
+      <div className={`adm-overlay ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
+      <aside className={`adm-side ${open ? 'open' : ''}`} aria-label="Admin navigation">
+        <Link to="/admin" className="adm-brand">
+          <span className="adm-brand-mark"><FiZap /></span>
+          <span><strong>PrimeGadgets</strong><small>Admin</small></span>
+        </Link>
+        <nav className="adm-nav">
+          <span className="adm-nav-label">Store</span>
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `adm-link ${isActive ? 'active' : ''}`}>
+              <n.icon aria-hidden="true" /> {n.label}
+              {n.count > 0 && <span className="adm-count">{n.count}</span>}
+            </NavLink>
           ))}
+          <span className="adm-nav-label">Quick actions</span>
+          <Link to="/admin/products/new" className="adm-link"><FiPlus /> Add product</Link>
+          <a href="/" target="_blank" rel="noopener noreferrer" className="adm-link"><FiHome /> View store</a>
         </nav>
-
-        <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 'var(--r)', color: 'var(--text-3)', fontWeight: 500, fontSize: '.875rem', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            <FiHome size={16} style={{ flexShrink: 0 }} />{!collapsed && 'Storefront'}
-          </Link>
-          {!collapsed && user && (
-            <div style={{ marginTop: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 700, flexShrink: 0 }}>{user.name?.[0]}</div>
-              <div style={{ overflow: 'hidden' }}><div style={{ fontSize: '.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div><div style={{ fontSize: '.7rem', color: 'var(--blue)', fontWeight: 600 }}>Admin</div></div>
+        <div className="adm-foot">
+          <button className="adm-link" onClick={toggleTheme} style={{ background: 'none', width: '100%' }}>
+            {theme === 'dark' ? <FiSun /> : <FiMoon />} {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+          <button className="adm-link" onClick={logout} style={{ background: 'none', width: '100%' }}><FiLogOut /> Sign out</button>
+          {user && (
+            <div className="adm-user">
+              <span className="av">{user.name?.[0]?.toUpperCase()}</span>
+              <div><strong>{user.name}</strong><small>{user.email}</small></div>
             </div>
           )}
         </div>
       </aside>
 
-      {/* Main */}
-      <main style={{ flex: 1, marginLeft: collapsed ? 68 : 240, padding: '32px 36px', minHeight: '100vh', transition: 'margin-left .25s cubic-bezier(.25,.46,.45,.94)' }}>
+      <main className="adm-main">
+        <div className="adm-topbar">
+          <button className="adm-icon-btn" onClick={() => setOpen(true)} aria-label="Open admin menu"><FiMenu /></button>
+          <strong>PrimeGadgets Admin</strong>
+        </div>
         {children}
       </main>
     </div>

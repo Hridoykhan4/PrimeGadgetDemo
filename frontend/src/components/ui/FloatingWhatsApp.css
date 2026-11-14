@@ -7,7 +7,7 @@
   position: fixed;
   bottom: 28px;
   right: 28px;
-  z-index: 9999;
+  z-index: 900;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -223,3 +223,12 @@
     0 12px 40px rgba(0, 0, 0, 0.5),
     0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
+@media (max-width: 860px) {
+  .floating-whatsapp { bottom: calc(78px + env(safe-area-inset-bottom)) !important; right: 14px !important; }
+}
+
+.fw-tooltip { opacity: 0 !important; transform: translateX(6px) !important; pointer-events: none; transition: opacity .18s, transform .18s; }
+.floating-whatsapp:hover .fw-tooltip { opacity: 1 !important; transform: none !important; }
+.fw-pulse-ring { animation-iteration-count: 3 !important; }
+@media (prefers-reduced-motion: reduce) { .fw-pulse-ring { display: none; } }

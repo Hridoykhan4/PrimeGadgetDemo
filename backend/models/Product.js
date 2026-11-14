@@ -65,7 +65,7 @@ ProductSchema.pre('save', function(next) {
 
 ProductSchema.statics.calcAvgRating = async function(productId) {
   const res = await this.model('Review').aggregate([
-    { $match: { product: productId } },
+    { $match: { product: new mongoose.Types.ObjectId(String(productId)), isApproved: true } },
     { $group: { _id: '$product', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
   ]);
   await this.findByIdAndUpdate(productId, {

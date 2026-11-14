@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Stripe = require('stripe');
 const Order = require('../models/Order');
 const { AppError } = require('../middleware/errorHandler');
+const { canAccess } = require('./orderController');
 
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
@@ -28,23 +29,25 @@ async function markPaid(order, session) {
     update_time: new Date().toISOString(),
     email: session.customer_details?.email,
   };
+  if (!order.shippingAddress.email && session.customer_details?.email) {
+    order.shippingAddress.email = session.customer_details.email;
+  }
   if (order.status === 'pending') {
     order.status = 'confirmed';
-    order.statusHistory.push({ status: 'confirmed', note: 'Card payment received (Stripe)' });
+    order.statusHistory.push({ status: 'confirmed', note: 'Card payment received' });
   }
   await order.save();
   return order;
 }
 
-// POST /payments/checkout-session  { orderId }
-// Builds the Stripe Checkout Session from the stored order, so amounts always come from the server.
+// POST /payments/checkout-session { orderId, key? } — guest (with key) or signed-in owner.
+// Amounts are built from the stored order, never from the browser.
 exports.createCheckoutSession = asyncHandler(async (req, res, next) => {
-  if (!stripe) return next(new AppError('Card payments are not configured yet', 503));
-  const order = await Order.findById(req.body.orderId);
-  if (!order) return next(new AppError('Order not found', 404));
-  if (order.user.toString() !== req.user._id.toString()) return next(new AppError('Not authorized', 403));
-  if (order.isPaid) return next(new AppError('Order is already paid', 400));
-  if (order.status === 'cancelled') return next(new AppError('Order was cancelled', 400));
+  if (!stripe) return next(new AppError('Card payments are not available right now. Please choose Cash on Delivery.', 503));
+  const order = await Order.findById(req.body.orderId).select('+accessKey').catch(() => null);
+  if (!order || !canAccess(order, req)) return next(new AppError('Order not found', 404));
+  if (order.isPaid) return next(new AppError('This order is already paid', 400));
+  if (order.status === 'cancelled') return next(new AppError('This order was cancelled', 400));
 
   const line_items = order.items.map((i) => ({
     quantity: i.quantity,
@@ -58,22 +61,29 @@ exports.createCheckoutSession = asyncHandler(async (req, res, next) => {
     },
   }));
   if (order.shippingFee > 0) {
-    line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.shippingFee), product_data: { name: 'UAE Delivery' } } });
+    line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.shippingFee), product_data: { name: 'Delivery' } } });
   }
   if (order.tax > 0) {
     line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.tax), product_data: { name: 'VAT (5%)' } } });
   }
 
   const base = siteBase(req);
+  const keyQ = `key=${order.accessKey}`;
+  const email = order.shippingAddress?.email || req.user?.email;
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items,
-    customer_email: req.user.email,
+    ...(email ? { customer_email: email } : {}),
     client_reference_id: order._id.toString(),
     metadata: { orderId: order._id.toString(), orderNumber: order.orderNumber },
-    payment_intent_data: { metadata: { orderId: order._id.toString(), orderNumber: order.orderNumber } },
-    success_url: `${base}/order/success/${order._id}?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/orders/${order._id}?payment=cancelled`,
+    payment_intent_data: {
+      metadata: { orderId: order._id.toString(), orderNumber: order.orderNumber },
+      description: `PrimeGadgets order ${order.orderNumber}`,
+    },
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+    locale: 'auto',
+    success_url: `${base}/order/success/${order._id}?${keyQ}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/order/${order._id}?${keyQ}&payment=cancelled`,
   });
 
   order.paymentResult = { id: session.id, status: 'open', update_time: new Date().toISOString() };
@@ -81,25 +91,27 @@ exports.createCheckoutSession = asyncHandler(async (req, res, next) => {
   res.json({ success: true, url: session.url, sessionId: session.id });
 });
 
-// GET /payments/verify/:orderId?session_id=cs_...
+// GET /payments/verify/:orderId?session_id=cs_...&key=...
 exports.verifyCheckoutSession = asyncHandler(async (req, res, next) => {
-  if (!stripe) return next(new AppError('Card payments are not configured yet', 503));
-  const order = await Order.findById(req.params.orderId);
-  if (!order) return next(new AppError('Order not found', 404));
-  if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') return next(new AppError('Not authorized', 403));
-  if (order.isPaid) return res.json({ success: true, paid: true, order });
+  const order = await Order.findById(req.params.orderId).select('+accessKey').catch(() => null);
+  if (!order || !canAccess(order, req)) return next(new AppError('Order not found', 404));
+  const strip = (o) => { const x = o.toObject(); delete x.accessKey; return x; };
+  if (order.isPaid || !stripe) return res.json({ success: true, paid: order.isPaid, order: strip(order) });
 
-  const sessionId = req.query.session_id;
-  if (!sessionId) return res.json({ success: true, paid: false, order });
+  const sessionId = req.query.session_id || (order.paymentResult?.id?.startsWith('cs_') ? order.paymentResult.id : null);
+  if (!sessionId) return res.json({ success: true, paid: false, order: strip(order) });
   const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (session.metadata?.orderId !== order._id.toString()) return next(new AppError('Session does not match order', 400));
+  if (session.metadata?.orderId !== order._id.toString()) return next(new AppError('Payment does not match this order', 400));
   if (session.payment_status === 'paid') await markPaid(order, session);
-  res.json({ success: true, paid: order.isPaid, order });
+  res.json({ success: true, paid: order.isPaid, order: strip(order) });
 });
 
-// POST /payments/webhook  (raw body; mounted before express.json in server.js)
+// POST /payments/webhook (raw body; mounted before express.json in server.js)
 exports.webhook = async (req, res) => {
-  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(503).send('not configured');
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET || !process.env.STRIPE_WEBHOOK_SECRET.startsWith('whsec_') ||
+      process.env.STRIPE_WEBHOOK_SECRET.includes('your')) {
+    return res.status(503).send('not configured');
+  }
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);

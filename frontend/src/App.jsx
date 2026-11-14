@@ -1,12 +1,12 @@
 import { useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore, useThemeStore } from './store/index.js';
 import Navbar from './components/layout/Navbar.jsx';
 import Footer from './components/layout/Footer.jsx';
 import SearchModal from './components/ui/SearchModal.jsx';
 import CartDrawer from './components/cart/CartDrawer.jsx';
 import FloatingWhatsApp from './components/ui/FloatingWhatsApp.jsx';
-import { useSearchModalStore, useCartDrawerStore } from './components/ui/uiStore.js';
+import { useSearchModalStore } from './components/ui/uiStore.js';
 
 // Lazy-loaded pages for code splitting
 const Home = lazy(() => import('./pages/Home.jsx'));
@@ -23,6 +23,7 @@ const Login = lazy(() => import('./pages/Login.jsx'));
 const Register = lazy(() => import('./pages/Register.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
+const TrackOrder = lazy(() => import('./pages/TrackOrder.jsx'));
 
 // Admin
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -30,6 +31,8 @@ const AdminProducts = lazy(() => import('./pages/admin/Products.jsx'));
 const AdminProductForm = lazy(() => import('./pages/admin/ProductForm.jsx'));
 const AdminOrders = lazy(() => import('./pages/admin/Orders.jsx'));
 const AdminUsers = lazy(() => import('./pages/admin/Users.jsx'));
+const AdminReviews = lazy(() => import('./pages/admin/Reviews.jsx'));
+const AdminMessages = lazy(() => import('./pages/admin/Messages.jsx'));
 
 const PageLoader = () => (
   <div className="loading-screen">
@@ -56,19 +59,40 @@ const PublicOnlyRoute = ({ children }) => {
   return token ? <Navigate to="/" replace /> : children;
 };
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 export default function App() {
   const { fetchMe, initialLoading } = useAuthStore();
   const { initTheme } = useThemeStore();
-  const { isOpen: searchOpen } = useSearchModalStore();
-  const { isOpen: cartOpen } = useCartDrawerStore();
+  const openSearch = useSearchModalStore((s) => s.open);
+  const { pathname } = useLocation();
+  const isAdmin = pathname.startsWith('/admin');
 
   useEffect(() => {
     initTheme();
     fetchMe();
   }, []);
 
+  // Press "/" anywhere to search
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey) return;
+      const t = e.target;
+      if (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return;
+      e.preventDefault();
+      openSearch();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openSearch]);
+
   return (
     <>
+      <ScrollToTop />
       <Navbar />
       <SearchModal />
       <CartDrawer />
@@ -88,12 +112,17 @@ export default function App() {
           <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
 
           {/* Protected */}
-          <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
-          <Route path="/order/success/:id" element={<PrivateRoute><OrderSuccess /></PrivateRoute>} />
+          {/* Guest-friendly shopping */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order/success/:id" element={<OrderSuccess />} />
+          <Route path="/order/:id" element={<OrderDetail />} />
+          <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="/track" element={<TrackOrder />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+
+          {/* Account */}
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
-          <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-          <Route path="/wishlist" element={<PrivateRoute><Wishlist /></PrivateRoute>} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
@@ -102,13 +131,15 @@ export default function App() {
           <Route path="/admin/products/:id/edit" element={<AdminRoute><AdminProductForm /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
+          <Route path="/admin/messages" element={<AdminRoute><AdminMessages /></AdminRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
 
-      <Footer />
-      <FloatingWhatsApp />
+      {!isAdmin && <Footer />}
+      {!isAdmin && !['/checkout', '/cart'].includes(pathname) && <FloatingWhatsApp />}
     </>
   );
 }

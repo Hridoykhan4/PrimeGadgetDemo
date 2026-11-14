@@ -20,8 +20,6 @@ export default function FloatingWhatsApp() {
     >
       {/* Pulse Rings */}
       <div className="fw-pulse-ring" />
-      <div className="fw-pulse-ring" style={{ animationDelay: '1s' }} />
-      <div className="fw-pulse-ring" style={{ animationDelay: '2s' }} />
 
       {/* Glow Effect */}
       <div className="fw-glow" />

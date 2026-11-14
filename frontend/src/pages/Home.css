@@ -19,7 +19,7 @@
   min-height: 420px;
 }
 [data-theme="dark"] .hero2-main {
-  background: radial-gradient(120% 90% at 100% 0%, #13254a 0%, transparent 60%), linear-gradient(135deg, #0d1526 0%, #101c36 100%);
+  background: radial-gradient(120% 90% at 100% 0%, rgba(61,139,255,.16) 0%, transparent 60%), linear-gradient(135deg, #15171c 0%, #111318 100%);
 }
 .hero2-slide { display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 24px; padding: 40px 48px 88px; min-height: 420px; }
 .hero2-copy { min-width: 0; }
@@ -91,6 +91,7 @@
 
 /* ── Category chips ───────────────────────────────── */
 .cat-rail { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .cat-rail { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 132px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 6px; } .cat-rail::-webkit-scrollbar { display: none; } .cat-chip { scroll-snap-align: start; } }
 .cat-chip {
   display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
   padding: 18px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);

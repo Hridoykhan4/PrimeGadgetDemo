@@ -7,67 +7,64 @@ import {
   FiHeadphones, FiShield, FiTruck, FiArrowRight
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import api from '../utils/api.js';
 import './Contact.css';
+
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
+const WA_DISPLAY = `+${WA_NUMBER.slice(0, 3)} ${WA_NUMBER.slice(3, 5)} ${WA_NUMBER.slice(5, 8)} ${WA_NUMBER.slice(8)}`;
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@primegadgets.ae';
 
 const CONTACT_INFO = [
   {
-    icon: FiMapPin,
-    label: 'Visit Our Showroom',
-    value: 'Level 2, Mall of Emirates',
-    sub: 'Sheikh Zayed Road, Dubai, UAE',
-    color: '#0066ff',
-    bg: 'rgba(0, 102, 255, 0.08)',
-  },
-  {
-    icon: FiPhone,
-    label: 'Call or WhatsApp',
-    value: '+971 50 987 6543',
-    sub: '+971 4 123 4567',
+    icon: FiMessageCircle,
+    label: 'WhatsApp',
+    value: WA_DISPLAY,
+    sub: 'Fastest way to reach us · Arabic & English',
     color: '#25d366',
     bg: 'rgba(37, 211, 102, 0.08)',
   },
   {
     icon: FiMail,
-    label: 'Email Us',
-    value: 'support@primegadgets.ae',
-    sub: 'sales@primegadgets.ae',
+    label: 'Email',
+    value: SUPPORT_EMAIL,
+    sub: 'For orders, returns and business enquiries',
     color: '#ff6b00',
     bg: 'rgba(255, 107, 0, 0.08)',
   },
   {
-    icon: FiClock,
-    label: 'Working Hours',
-    value: 'Mon–Sat: 10 AM – 10 PM',
-    sub: 'Sun: 12 PM – 8 PM',
-    color: '#f5a623',
-    bg: 'rgba(245, 166, 35, 0.08)',
+    icon: FiMapPin,
+    label: 'Delivery area',
+    value: 'All 7 emirates',
+    sub: 'Shipped from our UAE stock',
+    color: '#0066ff',
+    bg: 'rgba(0, 102, 255, 0.08)',
   },
 ];
 
 const WHY_CONTACT = [
   {
     icon: FiHeadphones,
-    title: '24/7 Support',
-    desc: 'Round-the-clock assistance for all your queries',
+    title: 'Real people',
+    desc: 'Our UAE team answers every message personally',
     color: '#0066ff',
   },
   {
     icon: FiShield,
-    title: 'Secure & Private',
-    desc: 'Your information is always protected with us',
+    title: 'Secure & private',
+    desc: 'Your details are only used to handle your request',
     color: '#00c853',
   },
   {
     icon: FiTruck,
-    title: 'Fast Delivery',
-    desc: 'Same-day delivery across Dubai & UAE',
+    title: 'Order help',
+    desc: 'Track, change or cancel an order with your order number',
     color: '#ff6b00',
   },
 ];
 
 export default function Contact() {
   const [searchParams] = useSearchParams();
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -77,6 +74,7 @@ export default function Contact() {
       setForm({
         name: '',
         email: '',
+        phone: '',
         subject: `Product Enquiry: ${productName}`,
         message: productId
           ? `Hi, I'm interested in this product: ${productName} (ID: ${productId}).\n\nPlease share more details and pricing.`
@@ -90,10 +88,15 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSending(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    toast.success('Message sent! We\'ll get back to you within 2 hours.');
-    setForm({ name: '', email: '', subject: '', message: '' });
-    setSending(false);
+    try {
+      await api.post('/messages', { ...form, type: form.subject === 'Feedback' ? 'feedback' : 'contact' });
+      toast.success('Message sent! Our team will get back to you soon.');
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send your message. Please try WhatsApp.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -118,14 +121,14 @@ export default function Contact() {
                 <span className="gradient-text">PrimeGadgets</span>
               </h1>
               <p className="contact-hero-desc">
-                Have questions? Our Dubai-based team is ready to help.
-                Expect a response within <strong>2 hours</strong>.
+                Questions about a product or an order? Our UAE team is ready to help
+                on WhatsApp or by message.
               </p>
 
               {/* Quick Actions */}
               <div className="contact-quick-actions">
                 <motion.a
-                  href="https://wa.me/971581234567"
+                  href={`https://wa.me/${WA_NUMBER}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contact-quick-btn whatsapp"
@@ -137,7 +140,7 @@ export default function Contact() {
                   <FiArrowRight size={14} />
                 </motion.a>
                 <motion.a
-                  href="tel:+97141234567"
+                  href={`tel:+${WA_NUMBER}`}
                   className="contact-quick-btn call"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -225,7 +228,7 @@ export default function Contact() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">
-                        <FiMail size={14} /> Email Address *
+                        <FiMail size={14} /> Email
                       </label>
                       <input
                         className="contact-input"
@@ -233,9 +236,13 @@ export default function Contact() {
                         value={form.email}
                         onChange={s('email')}
                         placeholder="ahmed@example.com"
-                        required
                       />
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label"><FiPhone size={14} /> Mobile (optional)</label>
+                    <input className="contact-input" type="tel" inputMode="tel" value={form.phone} onChange={s('phone')} placeholder="05X XXX XXXX" />
                   </div>
 
                   <div className="form-group">
@@ -247,6 +254,7 @@ export default function Contact() {
                       <option>Returns & Refunds</option>
                       <option>Technical Support</option>
                       <option>Wholesale / B2B</option>
+                      <option>Feedback</option>
                       <option>Other</option>
                     </select>
                   </div>
@@ -284,7 +292,7 @@ export default function Contact() {
                   </motion.button>
 
                   <p className="contact-form-note">
-                    We typically respond within 2 hours during working hours
+                    Prefer a faster answer? Message us on WhatsApp.
                   </p>
                 </form>
               </motion.div>
@@ -297,25 +305,6 @@ export default function Contact() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                {/* Map */}
-                <div className="contact-map-card">
-                  <div className="contact-map-header">
-                    <FiMapPin size={18} />
-                    <span>Our Location</span>
-                  </div>
-                  <div className="contact-map">
-                    <iframe
-                      title="PrimeGadgets Dubai Location"
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3613.6328842668!2d55.19963827604588!3d25.11776297766!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f6b8b4e4b4b4b%3A0x4b4b4b4b4b4b4b4b!2sMall%20of%20the%20Emirates%2C%20Dubai!5e0!3m2!1sen!2sae!4v1700000000000!5m2!1sen!2sae"
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-
                 {/* Why Contact Us */}
                 <div className="contact-why-card">
                   <h3>Why Choose Us?</h3>
@@ -343,7 +332,7 @@ export default function Contact() {
 
                 {/* WhatsApp CTA Card */}
                 <motion.a
-                  href="https://wa.me/971581234567"
+                  href={`https://wa.me/${WA_NUMBER}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contact-whatsapp-card"

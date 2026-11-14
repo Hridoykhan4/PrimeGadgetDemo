@@ -134,3 +134,13 @@
   cursor: pointer; transition: background var(--t-fast); text-align: left;
 }
 .history-item:hover { background: var(--surface-2); color: var(--text); }
+
+.quick-cat-pill { display: inline-flex; align-items: center; gap: 6px; }
+.qc-count { font-size: .7rem; color: var(--text-3); font-weight: 600; }
+.search-cat-matches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.search-popular { display: flex; flex-direction: column; gap: 4px; max-height: 46vh; overflow-y: auto; }
+@media (max-width: 640px) {
+  .search-modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
+  .search-quick-cats { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .quick-cat-pill { flex-shrink: 0; }
+}

@@ -8,7 +8,10 @@ import {
   FiCheck, FiZap, FiMessageSquare, FiMessageCircle, FiShoppingCart, FiCreditCard
 } from 'react-icons/fi';
 import api from '../utils/api.js';
-import { useAuthStore, useCartStore } from '../store/index.js';
+import { useCartStore, useWishlistStore, fmtAED } from '../store/index.js';
+import { recentlyViewed } from '../store/catalog.js';
+import ProductReviews from '../components/product/ProductReviews.jsx';
+import ProductRail from '../components/product/ProductRail.jsx';
 import { useCartDrawerStore } from '../components/ui/uiStore.js';
 import ProductCard from '../components/product/ProductCard.jsx';
 import toast from 'react-hot-toast';
@@ -20,7 +23,8 @@ const WHATSAPP_MESSAGE = import.meta.env.VITE_WHATSAPP_MESSAGE || 'Hi PrimeGadge
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toggleWishlist, isWishlisted } = useAuthStore();
+  const toggleWish = useWishlistStore((st) => st.toggle);
+  const wishlistedIds = useWishlistStore((st) => st.items);
   const addItem = useCartStore((st) => st.addItem);
   const openCart = useCartDrawerStore((st) => st.open);
 
@@ -30,8 +34,6 @@ export default function ProductDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState('description');
-  const [review, setReview] = useState({ rating: 5, title: '', body: '' });
-  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -40,26 +42,14 @@ export default function ProductDetail() {
     Promise.all([api.get(`/products/${id}`), api.get(`/products/${id}/related`)])
       .then(([pRes, rRes]) => {
         setProduct(pRes.data.product);
+        recentlyViewed.push(pRes.data.product);
         setRelated(rRes.data.products);
       })
       .catch(() => navigate('/products'))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleReview = async (e) => {
-    e.preventDefault();
-    setSubmittingReview(true);
-    try {
-      await api.post(`/reviews/product/${id}`, review);
-      toast.success('Review submitted!');
-      const { data } = await api.get(`/products/${id}`);
-      setProduct(data.product);
-      setReview({ rating: 5, title: '', body: '' });
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit');
-    }
-    setSubmittingReview(false);
-  };
+  const refreshProduct = () => api.get(`/products/${id}`).then(({ data }) => setProduct(data.product)).catch(() => {});
 
   const handleWhatsAppBuy = () => {
     const message = `${WHATSAPP_MESSAGE} Product: ${product.name} (AED ${product.salePrice > 0 ? product.salePrice : product.price})`;
@@ -75,7 +65,7 @@ export default function ProductDetail() {
   if (!product) return null;
 
   const price = product.salePrice > 0 ? product.salePrice : product.price;
-  const wishlisted = isWishlisted(product._id);
+  const wishlisted = wishlistedIds.some((w) => w._id === product._id);
   const saved = product.salePrice > 0 ? product.price - product.salePrice : 0;
   const discount = product.discountPercent || 0;
 
@@ -119,7 +109,7 @@ export default function ProductDetail() {
                 {/* Wishlist Button - Image Overlay */}
                 <motion.button
                   className={`pd-wishlist-btn ${wishlisted ? 'active' : ''}`}
-                  onClick={() => toggleWishlist(product._id)}
+                  onClick={() => toggleWish(product)}
                   whileTap={{ scale: 0.85 }}
                   title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                 >
@@ -147,7 +137,7 @@ export default function ProductDetail() {
             <div className="pd-info">
               {/* Badges Row */}
               <div className="pd-badges-row">
-                {product.isBestSeller && <span className="pd-badge-hot">HOT</span>}
+                {product.isBestSeller && <span className="pd-badge-hot">Top pick</span>}
                 {discount > 0 && <span className="pd-badge-sale">SAVE {discount}%</span>}
                 <span className={`pd-stock-badge ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
                   <span className="pd-stock-dot" />
@@ -179,9 +169,9 @@ export default function ProductDetail() {
                     </svg>
                   ))}
                 </div>
-                <span className="pd-rating-value">{product.ratings?.toFixed(1) || '0.0'}</span>
-                <button className="pd-reviews-link" onClick={() => setTab('reviews')}>
-                  ({product.numReviews} {product.numReviews === 1 ? 'review' : 'reviews'})
+                <span className="pd-rating-value">{product.numReviews ? product.ratings?.toFixed(1) : ''}</span>
+                <button className="pd-reviews-link" onClick={() => { setTab('reviews'); document.querySelector('.pd-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+                  {product.numReviews ? `(${product.numReviews} ${product.numReviews === 1 ? 'review' : 'reviews'})` : 'Be the first to review'}
                 </button>
               </div>
 
@@ -241,7 +231,7 @@ export default function ProductDetail() {
                   type="button"
                   className="btn btn-primary btn-lg pd-buy-btn"
                   disabled={product.stock === 0}
-                  onClick={() => { addItem(product, qty); toast.success('Added to cart'); openCart(); }}
+                  onClick={() => { addItem(product, qty); openCart(); }}
                 >
                   <FiShoppingCart aria-hidden="true" /> Add to cart
                 </button>
@@ -249,12 +239,12 @@ export default function ProductDetail() {
                   type="button"
                   className="btn btn-lg pd-buynow-btn"
                   disabled={product.stock === 0}
-                  onClick={() => { addItem(product, qty); navigate('/checkout'); }}
+                  onClick={() => { addItem(product, qty, null, { silent: true }); navigate('/checkout'); }}
                 >
                   <FiCreditCard aria-hidden="true" /> Buy now
                 </button>
               </div>
-              <p className="pd-pay-note">Cash on delivery or secure card / Apple Pay via Stripe · VAT and delivery shown at checkout</p>
+              <p className="pd-pay-note">No account needed · Cash on delivery or card / Apple Pay · Free delivery over AED 200</p>
 
               {/* CTA Buttons */}
               <div className="pd-cta-group">
@@ -295,17 +285,19 @@ export default function ProductDetail() {
                 </div>
                 <div className="guarantee-item">
                   <FiShield />
-                  <span>{product.warranty || '1 Year Warranty'}</span>
+                  <span>Secure checkout · Cash on delivery available</span>
                 </div>
-                <div className="guarantee-item">
-                  <FiRefreshCw />
-                  <span>{product.returnPolicy || '7-day return policy'}</span>
-                </div>
+                {product.warranty && product.warranty !== '1 Year' && (
+                  <div className="guarantee-item"><FiShield /><span>{product.warranty} warranty</span></div>
+                )}
+                {product.returnPolicy && product.returnPolicy !== '30-day returns' && (
+                  <div className="guarantee-item"><FiRefreshCw /><span>{product.returnPolicy}</span></div>
+                )}
               </div>
 
               {/* SKU & Share */}
               <div className="pd-meta-row">
-                {product.sku && <span className="pd-sku">SKU: {product.sku}</span>}
+                {product.sku && !/^TEMU/i.test(product.sku) && <span className="pd-sku">SKU: {product.sku}</span>}
                 <button
                   className="pd-share-btn"
                   onClick={() => {
@@ -326,7 +318,7 @@ export default function ProductDetail() {
               {['description', 'specifications', 'reviews'].map((t) => (
                 <button key={t} className={`pd-tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
-                  {t === 'reviews' && ` (${product.numReviews})`}
+                  {t === 'reviews' && product.numReviews > 0 && ` (${product.numReviews})`}
                 </button>
               ))}
             </div>
@@ -389,115 +381,7 @@ export default function ProductDetail() {
                 </div>
               )}
               {tab === 'reviews' && (
-                <div className="pd-reviews">
-                  <div className="reviews-summary">
-                    <div className="rating-big">
-                      <span className="rating-number">{product.ratings || 0}</span>
-                      <div className="stars">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <svg
-                            key={s}
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill={s <= Math.round(product.ratings) ? '#f5a623' : 'none'}
-                            stroke={s <= Math.round(product.ratings) ? '#f5a623' : '#e0e0e0'}
-                            strokeWidth="2"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="rating-count">{product.numReviews} reviews</span>
-                    </div>
-                  </div>
-                  {product.reviews?.length > 0 && (
-                    <div className="reviews-list">
-                      {product.reviews.map((r) => (
-                        <div key={r._id} className="review-item">
-                          <div className="review-header">
-                            <div className="reviewer-avatar">{r.user?.name?.[0]?.toUpperCase()}</div>
-                            <div className="reviewer-info">
-                              <strong>{r.user?.name}</strong>
-                              {r.isVerifiedPurchase && <span className="verified-badge">✓ Verified</span>}
-                              <div className="stars">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                  <svg
-                                    key={s}
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill={s <= r.rating ? '#f5a623' : 'none'}
-                                    stroke={s <= r.rating ? '#f5a623' : '#e0e0e0'}
-                                    strokeWidth="2"
-                                  >
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                  </svg>
-                                ))}
-                              </div>
-                            </div>
-                            <time className="review-date">
-                              {new Date(r.createdAt).toLocaleDateString('en-AE', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </time>
-                          </div>
-                          <h4 className="review-title">{r.title}</h4>
-                          <p className="review-body">{r.body}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="write-review">
-                    <h3>
-                      <FiMessageSquare /> Write a Review
-                    </h3>
-                    <form onSubmit={handleReview}>
-                      <div className="form-group">
-                        <label className="form-label">Your Rating</label>
-                        <div className="star-picker">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <button
-                              type="button"
-                              key={s}
-                              className={`star-pick-btn ${s <= review.rating ? 'active' : ''}`}
-                              onClick={() => setReview((r) => ({ ...r, rating: s }))}
-                            >
-                              ★
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Review Title</label>
-                        <input
-                          className="input"
-                          value={review.title}
-                          onChange={(e) => setReview((r) => ({ ...r, title: e.target.value }))}
-                          placeholder="Summarize your experience"
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Your Review</label>
-                        <textarea
-                          className="input"
-                          rows={4}
-                          value={review.body}
-                          onChange={(e) => setReview((r) => ({ ...r, body: e.target.value }))}
-                          placeholder="Share your experience in detail..."
-                          required
-                          style={{ resize: 'vertical' }}
-                        />
-                      </div>
-                      <button type="submit" className="btn btn-primary" disabled={submittingReview}>
-                        {submittingReview ? 'Submitting...' : 'Submit Review'}
-                      </button>
-                    </form>
-                  </div>
-                </div>
+                <ProductReviews productId={product._id} onChange={refreshProduct} />
               )}
             </div>
           </div>
@@ -511,15 +395,19 @@ export default function ProductDetail() {
                   <h2 className="section-title">Related Products</h2>
                 </div>
               </div>
-              <div className="grid-4">
-                {related.map((p, i) => (
-                  <ProductCard key={p._id} product={p} index={i} />
-                ))}
-              </div>
+              <ProductRail products={related} label="Related products" />
             </div>
           )}
         </div>
       </div>
+
+      {product.stock > 0 && (
+        <div className="pd-sticky">
+          <div><small>{product.name.slice(0, 40)}</small><strong>AED {fmtAED(price)}</strong></div>
+          <button className="btn btn-secondary" onClick={() => { addItem(product, qty); openCart(); }} aria-label="Add to cart"><FiShoppingCart /></button>
+          <button className="btn btn-primary" onClick={() => { addItem(product, qty, null, { silent: true }); navigate('/checkout'); }}>Buy now</button>
+        </div>
+      )}
     </>
   );
 }

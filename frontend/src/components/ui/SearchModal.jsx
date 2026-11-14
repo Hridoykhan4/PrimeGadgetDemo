@@ -4,20 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiX, FiTrendingUp, FiClock, FiArrowRight } from 'react-icons/fi';
 import { useSearchModalStore } from './uiStore.js';
 import api from '../../utils/api.js';
+import { useCatalogStore } from '../../store/catalog.js';
+import { CategoryIcon, categoryHref } from '../../utils/categories.jsx';
+import { fmtAED } from '../../store/index.js';
 import './SearchModal.css';
 
-const TRENDING = ['DJI Drone', 'AirPods Pro', 'Apple Watch', 'Meta Quest 3', 'GoPro'];
-const QUICK_CATS = [
-  { label: 'Drones', emoji: '🚁' }, { label: 'Smart Watches', emoji: '⌚' },
-  { label: 'AirBuds & Headphones', emoji: '🎧' }, { label: 'VR & AR', emoji: '🥽' },
-  { label: 'Cameras', emoji: '📷' },
-];
+let popularCache = null;
 
 export default function SearchModal() {
   const { isOpen, close } = useSearchModalStore();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [catMatches, setCatMatches] = useState([]);
+  const [popular, setPopular] = useState(popularCache || []);
+  const { categories, load: loadCats } = useCatalogStore();
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pg-search-history') || '[]'); } catch { return []; }
@@ -27,6 +28,11 @@ export default function SearchModal() {
 
   useEffect(() => {
     if (isOpen) {
+      loadCats();
+      if (!popularCache) {
+        api.get('/products', { params: { sort: '-isBestSeller,-createdAt', limit: 6 } })
+          .then(({ data }) => { popularCache = data.products; setPopular(data.products); }).catch(() => {});
+      }
       setTimeout(() => inputRef.current?.focus(), 80);
       document.body.style.overflow = 'hidden';
     } else {
@@ -45,13 +51,14 @@ export default function SearchModal() {
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (query.length < 2) { setSuggestions([]); return; }
+    if (query.length < 2) { setSuggestions([]); setCatMatches([]); setLoading(false); return; }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
         const { data } = await api.get(`/products/search/suggestions?q=${encodeURIComponent(query)}`);
         setSuggestions(data.suggestions || []);
-      } catch { setSuggestions([]); }
+        setCatMatches(data.categories || []);
+      } catch { setSuggestions([]); setCatMatches([]); }
       setLoading(false);
     }, 280);
   }, [query]);
@@ -76,7 +83,7 @@ export default function SearchModal() {
     localStorage.removeItem('pg-search-history');
   };
 
-  const finalPrice = (p) => p.salePrice > 0 ? p.salePrice : p.price;
+  const finalPrice = (p) => (p.salePrice > 0 && p.salePrice < p.price ? p.salePrice : p.price);
 
   return (
     <AnimatePresence>
@@ -111,7 +118,7 @@ export default function SearchModal() {
                 ref={inputRef}
                 type="text"
                 className="search-input"
-                placeholder="AirBuds, Drone, Smart Watch, VR..."
+                placeholder="Search kitchen, beauty, toys, tools…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -136,13 +143,13 @@ export default function SearchModal() {
 
             {/* Quick category pills */}
             <div className="search-quick-cats">
-              {QUICK_CATS.map(c => (
+              {categories.slice(0, 6).map(c => (
                 <button
-                  key={c.label}
+                  key={c.name}
                   className="quick-cat-pill"
-                  onClick={() => { close(); navigate(`/products?category=${encodeURIComponent(c.label)}`); }}
+                  onClick={() => { close(); navigate(categoryHref(c.name)); }}
                 >
-                  {c.emoji} {c.label.split(' ')[0]}
+                  <CategoryIcon name={c.name} /> {c.name} <span className="qc-count">{c.count}</span>
                 </button>
               ))}
             </div>
@@ -157,6 +164,18 @@ export default function SearchModal() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
+                  {catMatches.length > 0 && (
+                    <>
+                      <p className="search-results-label">Categories</p>
+                      <div className="search-cat-matches">
+                        {catMatches.map(c => (
+                          <button key={c.name} className="quick-cat-pill" onClick={() => { close(); navigate(`/products?category=${encodeURIComponent(c.name)}&keyword=${encodeURIComponent(query)}`); }}>
+                            <CategoryIcon name={c.name} /> “{query}” in {c.name} <span className="qc-count">{c.count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   <p className="search-results-label">Products</p>
                   {suggestions.map((p, i) => (
                     <motion.button
@@ -172,11 +191,10 @@ export default function SearchModal() {
                       </div>
                       <div className="suggestion-info">
                         <span className="suggestion-name">{p.name}</span>
-                        <span className="suggestion-cat">{p.brand} · {p.category}</span>
+                        <span className="suggestion-cat">{p.category}</span>
                       </div>
                       <div className="suggestion-price">
-                        <span className="price-current">AED {finalPrice(p).toLocaleString()}</span>
-                        {p.salePrice > 0 && <span className="price-original">AED {p.price.toLocaleString()}</span>}
+                        <span className="price-current">AED {fmtAED(finalPrice(p))}</span>
                       </div>
                       <FiArrowRight className="suggestion-arrow" />
                     </motion.button>
@@ -189,16 +207,30 @@ export default function SearchModal() {
               ) : query.length >= 2 && !loading ? (
                 <motion.div key="no-results" className="search-no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <p>No products found for "<strong>{query}</strong>"</p>
-                  <p className="body-sm text-muted">Try a different term or browse categories</p>
+                  <p className="body-sm text-muted">Try a shorter word, or browse a category below</p>
+                  <div className="search-quick-cats" style={{ justifyContent: 'center', marginTop: 12 }}>
+                    {categories.slice(0, 6).map(c => (
+                      <button key={c.name} className="quick-cat-pill" onClick={() => { close(); navigate(categoryHref(c.name)); }}>
+                        <CategoryIcon name={c.name} /> {c.name}
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div key="default" className="search-default" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   {/* Trending */}
                   <div className="search-section">
-                    <div className="search-section-title"><FiTrendingUp size={14} /> Trending in Dubai</div>
-                    <div className="search-tags">
-                      {TRENDING.map(t => (
-                        <button key={t} className="search-tag" onClick={() => handleSearch(t)}>{t}</button>
+                    <div className="search-section-title"><FiTrendingUp size={14} /> Popular right now</div>
+                    <div className="search-popular">
+                      {popular.map(p => (
+                        <button key={p._id} className="suggestion-item" onClick={() => handleSuggestionClick(p)}>
+                          <div className="suggestion-image"><img src={p.images?.[0]?.url} alt="" loading="lazy" /></div>
+                          <div className="suggestion-info">
+                            <span className="suggestion-name">{p.name}</span>
+                            <span className="suggestion-cat">{p.category}</span>
+                          </div>
+                          <div className="suggestion-price"><span className="price-current">AED {fmtAED(finalPrice(p))}</span></div>
+                        </button>
                       ))}
                     </div>
                   </div>

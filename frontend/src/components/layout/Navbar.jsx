@@ -1,383 +1,282 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiSearch, FiHeart, FiUser, FiSun, FiMoon,
-  FiMenu, FiX, FiChevronDown, FiPackage, FiLogOut,
-  FiGrid, FiZap, FiMessageSquare
+  FiSearch, FiHeart, FiUser, FiSun, FiMoon, FiMenu, FiX, FiChevronDown, FiChevronRight,
+  FiPackage, FiLogOut, FiGrid, FiZap, FiShoppingCart, FiHome, FiTruck, FiMapPin, FiMessageCircle,
 } from 'react-icons/fi';
-import {
-  FiCoffee, FiScissors, FiGift, FiTool, FiSmartphone, FiHome as FiHomeIcon, FiSend, FiWatch,
-  FiHeadphones, FiEye, FiCamera, FiTarget, FiCpu, FiMonitor, FiTruck as FiTruckIcon,
-} from 'react-icons/fi';
-import { useAuthStore, useThemeStore } from '../../store/index.js';
-import { useSearchModalStore } from '../ui/uiStore.js';
+import { useAuthStore, useThemeStore, useCartStore, useWishlistStore, fmtAED } from '../../store/index.js';
+import { useCatalogStore } from '../../store/catalog.js';
+import { CategoryIcon, categoryHref } from '../../utils/categories.jsx';
+import { useSearchModalStore, useCartDrawerStore } from '../ui/uiStore.js';
+import api from '../../utils/api.js';
 import './Navbar.css';
 
-const CATEGORIES = [
-  { name: 'Home & Kitchen', icon: <FiCoffee /> },
-  { name: 'Beauty & Personal Care', icon: <FiScissors /> },
-  { name: 'Kids & Toys', icon: <FiGift /> },
-  { name: 'Tools & Outdoor', icon: <FiTool /> },
-  { name: 'Accessories', icon: <FiSmartphone /> },
-  { name: 'Smart Home', icon: <FiHomeIcon /> },
-  { name: 'Drones', icon: <FiSend /> },
-  { name: 'Smart Watches', icon: <FiWatch /> },
-  { name: 'AirBuds & Headphones', icon: <FiHeadphones /> },
-  { name: 'VR & AR', icon: <FiEye /> },
-  { name: 'Cameras', icon: <FiCamera /> },
-  { name: 'Gaming', icon: <FiTarget /> },
-  { name: 'AI Devices', icon: <FiCpu /> },
-  { name: 'Laptops', icon: <FiMonitor /> },
-];
+const previewCache = new Map();
 
-const WHATSAPP_URL = 'https://wa.me/971500000000?text=Hello%20PrimeGadgets%2C%20I%20want%20to%20inquire%20about%20your%20products.';
+function MegaMenu({ categories, onClose }) {
+  const [active, setActive] = useState(categories[0]?.name);
+  const [items, setItems] = useState(previewCache.get(categories[0]?.name) || []);
+
+  useEffect(() => {
+    if (!active) return;
+    if (previewCache.has(active)) { setItems(previewCache.get(active)); return; }
+    let alive = true;
+    api.get('/products', { params: { category: active, limit: 4, sort: '-isBestSeller,-createdAt' } })
+      .then(({ data }) => { previewCache.set(active, data.products); if (alive) setItems(data.products); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [active]);
+
+  return (
+    <motion.div
+      className="mega"
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+      transition={{ duration: 0.16 }}
+      onMouseLeave={onClose}
+      role="menu"
+    >
+      <ul className="mega-cats">
+        {categories.map((c) => (
+          <li key={c.name}>
+            <Link
+              to={categoryHref(c.name)}
+              className={`mega-cat ${active === c.name ? 'active' : ''}`}
+              onMouseEnter={() => setActive(c.name)}
+              onFocus={() => setActive(c.name)}
+              onClick={onClose}
+              role="menuitem"
+            >
+              <span className="mega-cat-icon"><CategoryIcon name={c.name} /></span>
+              <span className="mega-cat-name">{c.name}</span>
+              <span className="mega-cat-count">{c.count}</span>
+              <FiChevronRight className="mega-cat-arrow" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+        <li><Link to="/products" className="mega-all" onClick={onClose}>Shop all products <FiChevronRight aria-hidden="true" /></Link></li>
+      </ul>
+      <div className="mega-preview">
+        <div className="mega-preview-head">
+          <strong>{active}</strong>
+          <Link to={categoryHref(active || '')} onClick={onClose}>See all <FiChevronRight aria-hidden="true" /></Link>
+        </div>
+        <div className="mega-preview-grid">
+          {items.map((p) => (
+            <Link key={p._id} to={`/products/${p._id}`} className="mega-prod" onClick={onClose}>
+              <span className="mega-prod-img"><img src={p.images?.[0]?.url} alt="" loading="lazy" /></span>
+              <span className="mega-prod-name">{p.name}</span>
+              <span className="mega-prod-price">AED {fmtAED(p.salePrice > 0 && p.salePrice < p.price ? p.salePrice : p.price)}</span>
+            </Link>
+          ))}
+          {!items.length && [0, 1, 2, 3].map((k) => <span key={k} className="mega-prod skeleton" style={{ height: 180 }} />)}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, token, logout, isAdmin } = useAuthStore();
+  const { user, token, logout } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
   const { theme, toggleTheme } = useThemeStore();
-  const { open: openSearch } = useSearchModalStore();
+  const openSearch = useSearchModalStore((s) => s.open);
+  const openCart = useCartDrawerStore((s) => s.open);
+  const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + i.qty, 0));
+  const wishCount = useWishlistStore((s) => s.items.length);
+  const { categories, load } = useCatalogStore();
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userDropdown, setUserDropdown] = useState(false);
-  const [catDropdown, setCatDropdown] = useState(false);
+  const [userMenu, setUserMenu] = useState(false);
+  const [mega, setMega] = useState(false);
+  const [bump, setBump] = useState(false);
   const userRef = useRef(null);
-  const catRef = useRef(null);
+  const megaTimer = useRef(null);
+  const prevCount = useRef(cartCount);
 
-  // Get active category from URL params
-  const searchParams = new URLSearchParams(location.search);
-  const activeCategory = searchParams.get('category');
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => { setMobileOpen(false); setUserDropdown(false); setCatDropdown(false); }, [location]);
+  useEffect(() => { setMobileOpen(false); setUserMenu(false); setMega(false); }, [location.pathname, location.search]);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (userRef.current && !userRef.current.contains(e.target)) setUserDropdown(false);
-      if (catRef.current && !catRef.current.contains(e.target)) setCatDropdown(false);
-    };
+    if (cartCount > prevCount.current) { setBump(true); const t = setTimeout(() => setBump(false), 450); prevCount.current = cartCount; return () => clearTimeout(t); }
+    prevCount.current = cartCount;
+  }, [cartCount]);
+
+  useEffect(() => {
+    const handler = (e) => { if (userRef.current && !userRef.current.contains(e.target)) setUserMenu(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  if (location.pathname.startsWith('/admin')) return null;
+
   const isDark = theme === 'dark';
+  const openMega = () => { clearTimeout(megaTimer.current); megaTimer.current = setTimeout(() => setMega(true), 120); };
+  const closeMega = () => { clearTimeout(megaTimer.current); setMega(false); };
 
   return (
     <>
-      {/* Promo Banner */}
-      <motion.div
-        className="navbar-promo"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <FiTruckIcon aria-hidden="true" style={{ verticalAlign: '-2px' }} /> <strong>Free delivery</strong>&nbsp;on orders over AED 200 · Cash on delivery · Local UAE stock
-      </motion.div>
+      <div className="promo-bar">
+        <div className="container promo-inner">
+          <span><FiTruck aria-hidden="true" /> <strong>Free delivery</strong>&nbsp;over AED 200</span>
+          <span className="promo-sep" aria-hidden="true" />
+          <span>Cash on delivery across the UAE</span>
+          <span className="promo-sep promo-hide-sm" aria-hidden="true" />
+          <Link to="/track" className="promo-hide-sm promo-link"><FiMapPin aria-hidden="true" /> Track your order</Link>
+        </div>
+      </div>
 
-      <motion.header
-        className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}
-        initial={{ y: -80 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        <div className="navbar-inner container">
-          {/* Logo */}
-          <Link to="/" className="navbar-logo">
-            <div className="logo-icon"><FiZap /></div>
-            <div className="logo-text">
-              <span className="logo-prime">Prime</span>
-              <span className="logo-gadgets">Gadgets</span>
-            </div>
+      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+        <div className="container header-row">
+          <button className="hdr-icon only-mobile" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <FiMenu />
+          </button>
+
+          <Link to="/" className="brand" aria-label="PrimeGadgets home">
+            <span className="brand-mark"><FiZap aria-hidden="true" /></span>
+            <span className="brand-text"><strong>Prime</strong>Gadgets</span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="navbar-nav">
-            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
-
-            <div className="nav-dropdown-wrap" ref={catRef}>
+          <nav className="hdr-nav" aria-label="Main">
+            <div className="shop-wrap" onMouseEnter={openMega} onMouseLeave={closeMega}>
               <button
-                className={`nav-link nav-link-btn ${location.pathname === '/products' ? 'active' : ''}`}
-                onMouseEnter={() => setCatDropdown(true)}
-                onClick={() => navigate('/products')}
+                className={`hdr-link ${mega ? 'open' : ''}`}
+                onClick={() => setMega((m) => !m)}
+                aria-expanded={mega}
+                aria-haspopup="menu"
               >
-                Shop <FiChevronDown className={`dropdown-arrow ${catDropdown ? 'rotated' : ''}`} />
+                <FiGrid aria-hidden="true" /> Categories <FiChevronDown className="chev" aria-hidden="true" />
               </button>
-
               <AnimatePresence>
-                {catDropdown && (
-                  <motion.div
-                    className="mega-dropdown"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.2 }}
-                    onMouseLeave={() => setCatDropdown(false)}
-                  >
-                    <div className="mega-dropdown-grid">
-                      {CATEGORIES.map(cat => (
-                        <Link
-                          key={cat.name}
-                          to={`/products?category=${encodeURIComponent(cat.name)}`}
-                          className="mega-cat-item"
-                        >
-                          <span className="mega-cat-icon">{cat.icon}</span>
-                          <span>{cat.name}</span>
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="mega-dropdown-footer">
-                      <Link to="/products" className="btn btn-primary btn-sm">
-                        View All Products →
-                      </Link>
-                    </div>
-                  </motion.div>
-                )}
+                {mega && categories.length > 0 && <MegaMenu categories={categories} onClose={closeMega} />}
               </AnimatePresence>
             </div>
-
-            <Link to="/about" className={`nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
-            <Link to="/contact" className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
           </nav>
 
-          {/* Actions */}
-          <div className="navbar-actions">
-            {/* Search */}
-            <button className="nav-action-btn" onClick={openSearch} aria-label="Search">
-              <FiSearch />
+          <button className="hdr-search" onClick={openSearch} aria-label="Search products">
+            <FiSearch aria-hidden="true" />
+            <span>Search for kitchen, beauty, toys…</span>
+            <kbd>/</kbd>
+          </button>
+
+          <div className="hdr-actions">
+            <button className="hdr-icon only-mobile" onClick={openSearch} aria-label="Search"><FiSearch /></button>
+
+            <button className="hdr-icon hide-mobile" onClick={toggleTheme} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {isDark ? <FiSun /> : <FiMoon />}
             </button>
 
-            {/* Theme */}
-            <button className="nav-action-btn theme-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              <AnimatePresence mode="wait">
-                <motion.div key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                  {isDark ? <FiSun /> : <FiMoon />}
-                </motion.div>
-              </AnimatePresence>
-            </button>
+            <Link to="/wishlist" className="hdr-icon hide-mobile" aria-label={`Wishlist, ${wishCount} items`}>
+              <FiHeart />
+              {wishCount > 0 && <span className="hdr-badge">{wishCount}</span>}
+            </Link>
 
-            {/* WhatsApp CTA */}
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary btn-sm navbar-whatsapp-btn"
-              aria-label="Contact via WhatsApp"
-            >
-              <FiMessageSquare size={16} />
-              <span className="whatsapp-text">WhatsApp</span>
-            </a>
-
-            {/* Wishlist - Only on tablet+ */}
-            {token && (
-              <Link to="/wishlist" className="nav-action-btn wishlist-btn" aria-label="Wishlist">
-                <FiHeart />
-              </Link>
-            )}
-
-            {/* User */}
             {token ? (
-              <div className="user-dropdown-wrap" ref={userRef}>
-                <button className="user-btn" onClick={() => setUserDropdown(d => !d)}>
-                  <div className="user-avatar">
-                    {user?.avatar?.url ? <img src={user.avatar.url} alt={user.name} /> : user?.name?.[0]?.toUpperCase()}
-                  </div>
-                  <span className="user-name">{user?.name?.split(' ')[0]}</span>
-                  <FiChevronDown className={`dropdown-arrow ${userDropdown ? 'rotated' : ''}`} />
+              <div className="user-wrap hide-mobile" ref={userRef}>
+                <button className="hdr-account" onClick={() => setUserMenu((v) => !v)} aria-expanded={userMenu}>
+                  <span className="avatar">{user?.name?.[0]?.toUpperCase() || <FiUser />}</span>
+                  <span className="hdr-account-text"><small>Hello,</small>{user?.name?.split(' ')[0] || 'Account'}</span>
+                  <FiChevronDown className="chev" aria-hidden="true" />
                 </button>
-
                 <AnimatePresence>
-                  {userDropdown && (
-                    <motion.div
-                      className="user-dropdown"
-                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                      transition={{ duration: 0.18 }}
-                    >
-                      <div className="dropdown-header">
-                        <strong>{user?.name}</strong>
-                        <span>{user?.email}</span>
-                      </div>
-                      <div className="dropdown-divider" />
-                      <Link to="/profile" className="dropdown-item"><FiUser size={15} />Profile</Link>
-                      <Link to="/orders" className="dropdown-item"><FiPackage size={15} />My Orders</Link>
-                      <Link to="/wishlist" className="dropdown-item"><FiHeart size={15} />Wishlist</Link>
-                      {isAdmin && (
-                        <>
-                          <div className="dropdown-divider" />
-                          <Link to="/admin" className="dropdown-item admin-item"><FiGrid size={15} />Admin Panel</Link>
-                        </>
-                      )}
-                      <div className="dropdown-divider" />
-                      <button className="dropdown-item logout-item" onClick={logout}><FiLogOut size={15} />Logout</button>
+                  {userMenu && (
+                    <motion.div className="user-menu" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.15 }}>
+                      <div className="user-menu-head"><strong>{user?.name}</strong><span>{user?.email}</span></div>
+                      <Link to="/orders" className="user-menu-item"><FiPackage /> My orders</Link>
+                      <Link to="/wishlist" className="user-menu-item"><FiHeart /> Wishlist</Link>
+                      <Link to="/profile" className="user-menu-item"><FiUser /> Profile</Link>
+                      {isAdmin && <Link to="/admin" className="user-menu-item accent"><FiGrid /> Admin dashboard</Link>}
+                      <button className="user-menu-item danger" onClick={logout}><FiLogOut /> Sign out</button>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-            ) : null}
+            ) : (
+              <Link to="/login" className="hdr-account hide-mobile">
+                <span className="avatar ghost"><FiUser /></span>
+                <span className="hdr-account-text"><small>Hello, sign in</small>Account</span>
+              </Link>
+            )}
 
-            {/* Mobile hamburger */}
-            <button className="hamburger" onClick={() => setMobileOpen(m => !m)}>
-              {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            <button className={`hdr-cart ${bump ? 'bump' : ''}`} onClick={openCart} aria-label={`Cart, ${cartCount} items`}>
+              <FiShoppingCart aria-hidden="true" />
+              <span className="hdr-cart-text hide-mobile">Cart</span>
+              {cartCount > 0 && <span className="hdr-badge cart">{cartCount > 99 ? '99+' : cartCount}</span>}
             </button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      {/* Mobile Menu */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            <motion.div
-              className="mobile-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.nav
-              className="mobile-menu"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            <motion.div className="m-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} />
+            <motion.aside
+              className="m-drawer"
+              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+              aria-label="Menu"
             >
-              {/* Header */}
-              <div className="mobile-menu-header">
-                <Link to="/" className="navbar-logo" onClick={() => setMobileOpen(false)}>
-                  <div className="logo-icon"><FiZap /></div>
-                  <div className="logo-text">
-                    <span className="logo-prime">Prime</span>
-                    <span className="logo-gadgets">Gadgets</span>
-                  </div>
-                </Link>
-                <div className="mobile-quick-actions">
-                  <button className="mobile-quick-btn" onClick={() => { openSearch(); setMobileOpen(false); }} title="Search">
-                    <FiSearch size={18} />
-                  </button>
-                  <button className="mobile-quick-btn" onClick={toggleTheme} title="Toggle theme">
-                    {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
-                  </button>
-                  <button className="mobile-quick-btn close-btn" onClick={() => setMobileOpen(false)} title="Close">
-                    <FiX size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* User Section */}
-              {token && (
-                <motion.div
-                  className="mobile-user-section"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div className="mobile-user-card">
-                    <div className="mobile-user-avatar">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="mobile-user-info">
-                      <div className="mobile-user-name">{user?.name}</div>
-                      <div className="mobile-user-role">{isAdmin ? 'Admin' : 'Premium Member'}</div>
-                    </div>
-                  </div>
-                  <div className="mobile-user-quick-links">
-                    <Link to="/profile" className="mobile-user-quicklink" onClick={() => setMobileOpen(false)}>
-                      <FiUser size={16} /> Profile
-                    </Link>
-                    <Link to="/orders" className="mobile-user-quicklink" onClick={() => setMobileOpen(false)}>
-                      <FiPackage size={16} /> Orders
-                    </Link>
-                    <Link to="/wishlist" className="mobile-user-quicklink" onClick={() => setMobileOpen(false)}>
-                      <FiHeart size={16} /> Wishlist
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Body */}
-              <div className="mobile-menu-body">
-                {/* Main Navigation */}
-                <div className="mobile-nav-section">
-                  <Link to="/" className={`mobile-nav-link primary-link ${location.pathname === '/' && !activeCategory ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
-                    <span className="nav-icon">🏠</span> Home
-                  </Link>
-                  <Link to="/products" className={`mobile-nav-link primary-link ${location.pathname === '/products' && !activeCategory ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
-                    <span className="nav-icon">🛍️</span> Shop All
-                  </Link>
-                </div>
-
-                {/* Categories Section */}
-                <div className="mobile-nav-section">
-                  <div className="mobile-section-title">Categories</div>
-                  <div className="mobile-cat-grid">
-                    {CATEGORIES.map((cat, idx) => (
-                      <motion.div
-                        key={cat.name}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.08 + idx * 0.03 }}
-                      >
-                        <Link
-                          to={`/products?category=${encodeURIComponent(cat.name)}`}
-                          className={`mobile-cat-card ${activeCategory === cat.name ? 'active' : ''}`}
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          <div className="mobile-cat-icon">{cat.icon}</div>
-                          <div className="mobile-cat-label">{cat.name}</div>
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Info Section */}
-                <div className="mobile-nav-section">
-                  <Link to="/about" className={`mobile-nav-link secondary-link ${location.pathname === '/about' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
-                    About Us
-                  </Link>
-                  <Link to="/contact" className={`mobile-nav-link secondary-link ${location.pathname === '/contact' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
-                    Contact Us
-                  </Link>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="mobile-menu-footer">
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary btn-full mobile-whatsapp"
-                >
-                  <FiMessageSquare size={18} />
-                  <span>Chat on WhatsApp</span>
-                </a>
-                {token && (
-                  <>
-                    {isAdmin && (
-                      <Link to="/admin" className="btn btn-secondary btn-full" onClick={() => setMobileOpen(false)}>
-                        Admin Panel
-                      </Link>
-                    )}
-                    <button className="btn btn-danger btn-full" onClick={() => { logout(); setMobileOpen(false); }}>
-                      Logout
-                    </button>
-                  </>
+              <div className="m-head">
+                {token ? (
+                  <div className="m-user"><span className="avatar">{user?.name?.[0]?.toUpperCase()}</span><div><strong>{user?.name}</strong><small>{user?.email}</small></div></div>
+                ) : (
+                  <Link to="/login" className="m-user"><span className="avatar ghost"><FiUser /></span><div><strong>Sign in</strong><small>Optional — you can check out as a guest</small></div></Link>
                 )}
+                <button className="hdr-icon" onClick={() => setMobileOpen(false)} aria-label="Close menu"><FiX /></button>
               </div>
-            </motion.nav>
+
+              <div className="m-body">
+                <p className="m-title">Shop by category</p>
+                {categories.map((c) => (
+                  <Link key={c.name} to={categoryHref(c.name)} className="m-cat">
+                    <span className="m-cat-icon"><CategoryIcon name={c.name} /></span>
+                    <span className="m-cat-name">{c.name}</span>
+                    <span className="m-cat-count">{c.count}</span>
+                  </Link>
+                ))}
+                <Link to="/products" className="m-cat strong"><span className="m-cat-icon"><FiGrid /></span><span className="m-cat-name">All products</span><FiChevronRight /></Link>
+
+                <p className="m-title">Help & account</p>
+                <Link to="/track" className="m-link"><FiMapPin /> Track an order</Link>
+                {token && <Link to="/orders" className="m-link"><FiPackage /> My orders</Link>}
+                <Link to="/wishlist" className="m-link"><FiHeart /> Wishlist {wishCount > 0 && <span className="m-pill">{wishCount}</span>}</Link>
+                <Link to="/contact" className="m-link"><FiMessageCircle /> Contact us</Link>
+                <Link to="/about" className="m-link"><FiZap /> About PrimeGadgets</Link>
+                {isAdmin && <Link to="/admin" className="m-link accent"><FiGrid /> Admin dashboard</Link>}
+                <button className="m-link" onClick={toggleTheme}>{isDark ? <FiSun /> : <FiMoon />} {isDark ? 'Light mode' : 'Dark mode'}</button>
+                {token && <button className="m-link danger" onClick={() => { logout(); setMobileOpen(false); }}><FiLogOut /> Sign out</button>}
+              </div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="tabbar" aria-label="Quick navigation">
+        <NavLink to="/" end className="tab"><FiHome /><span>Home</span></NavLink>
+        <button className="tab" onClick={() => setMobileOpen(true)}><FiGrid /><span>Categories</span></button>
+        <NavLink to="/wishlist" className="tab"><FiHeart /><span>Saved</span>{wishCount > 0 && <i className="tab-badge">{wishCount}</i>}</NavLink>
+        <button className="tab" onClick={openCart}><FiShoppingCart /><span>Cart</span>{cartCount > 0 && <i className="tab-badge cart">{cartCount}</i>}</button>
+        <NavLink to={token ? '/orders' : '/track'} className="tab"><FiPackage /><span>Orders</span></NavLink>
+      </nav>
     </>
   );
 }

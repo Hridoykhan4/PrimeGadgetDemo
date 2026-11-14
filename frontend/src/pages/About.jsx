@@ -2,109 +2,63 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FiZap, FiShield, FiTruck, FiHeadphones, FiAward, FiUsers, FiGlobe, FiStar } from 'react-icons/fi';
-
-const STATS = [
-  { value: '50K+', label: 'Happy Customers', icon: FiUsers },
-  { value: '1,200+', label: 'Products', icon: FiZap },
-  { value: '4.9★', label: 'Average Rating', icon: FiStar },
-  { value: '7 UAE', label: 'Emirates Covered', icon: FiGlobe },
-];
+import { FiZap, FiShield, FiTruck, FiMessageCircle, FiDollarSign, FiTag, FiArrowRight, FiUserCheck } from 'react-icons/fi';
+import './Shop.css';
 
 const VALUES = [
-  { icon: FiShield, title: '100% Authentic', desc: 'Every product is sourced directly from authorised distributors and brand partners. No grey market, no fakes.' },
-  { icon: FiTruck, title: 'Fast UAE Delivery', desc: 'Same-day delivery in Dubai for orders before 2 PM. Next-day delivery across all 7 Emirates.' },
-  { icon: FiHeadphones, title: '24/7 Expert Support', desc: 'Our tech specialists are available around the clock via WhatsApp, call or live chat.' },
-  { icon: FiAward, title: 'Official Warranty', desc: 'All products carry full manufacturer warranty. We handle warranty claims on your behalf.' },
-];
-
-const TEAM = [
-  { name: 'Omar Al Rashid', role: 'CEO & Founder', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', bio: 'Serial tech entrepreneur with 15 years in Dubai\'s retail market.' },
-  { name: 'Sarah Mitchell', role: 'Head of Products', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200', bio: 'Ex-Apple and DJI retail specialist. Curates our exclusive product lineup.' },
-  { name: 'Khalid Bin Zayed', role: 'Operations Director', img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200', bio: 'Logistics expert ensuring blazing-fast delivery across the UAE.' },
+  { icon: FiTag, title: 'Low prices, every day', desc: 'We keep our range focused on useful everyday products and price them fairly for UAE shoppers.' },
+  { icon: FiTruck, title: 'Shipped inside the UAE', desc: 'Orders ship from local stock, so there is no long international wait. Free delivery over AED 200.' },
+  { icon: FiDollarSign, title: 'Pay the way you like', desc: 'Cash on delivery across the UAE, or pay instantly by card, Apple Pay or Google Pay through Stripe.' },
+  { icon: FiUserCheck, title: 'No account needed', desc: 'Check out as a guest in under a minute and track your order with your order number and mobile.' },
+  { icon: FiShield, title: 'Secure by design', desc: 'Card details are entered on Stripe\'s secure page — we never see or store card numbers.' },
+  { icon: FiMessageCircle, title: 'Real support', desc: 'Questions before or after you buy? Message our UAE team on WhatsApp in Arabic or English.' },
 ];
 
 export default function About() {
   return (
     <>
-      <Helmet><title>About Us — PrimeGadgets Dubai</title></Helmet>
-      <div style={{ paddingTop: 'var(--nav-h)' }}>
-        {/* Hero */}
-        <section style={{ padding: '80px 0 60px', background: 'linear-gradient(135deg, var(--bg) 0%, var(--surface-2) 100%)', borderBottom: '1px solid var(--border)', textAlign: 'center' }}>
-          <div className="container" style={{ maxWidth: 720 }}>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(0,102,255,.1)', color: 'var(--blue)', borderRadius: 'var(--r-full)', fontSize: '.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 20 }}>
-                <FiZap /> Our Story
-              </span>
-              <h1 className="display-lg" style={{ marginBottom: 20 }}>Dubai's Most Trusted <span className="gradient-text">Gadget Store</span></h1>
-              <p style={{ fontSize: '1.1rem', color: 'var(--text-2)', lineHeight: 1.8 }}>
-                Founded in 2019, PrimeGadgets was born from a simple belief: Dubai's tech-savvy residents deserve a premium shopping experience that matches their lifestyle. We bring you the world's most cutting-edge gadgets — curated, authentic, and delivered fast.
-              </p>
-            </motion.div>
-          </div>
-        </section>
+      <Helmet><title>About us — PrimeGadgets</title></Helmet>
+      <div className="shop-page">
+        <div className="container" style={{ maxWidth: 1040 }}>
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="about-hero">
+            <span className="about-kicker"><FiZap /> About PrimeGadgets</span>
+            <h1 className="shop-title" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>Smart everyday shopping for the UAE</h1>
+            <p>
+              PrimeGadgets is an online store for practical products — kitchen and home gear, beauty and personal care,
+              toys, tools and accessories — at prices that make sense. Everything ships from stock inside the UAE, and you can
+              pay by card or in cash when it arrives.
+            </p>
+            <div className="about-ctas">
+              <Link to="/products" className="btn btn-primary btn-lg">Start shopping <FiArrowRight /></Link>
+              <Link to="/contact" className="btn btn-secondary btn-lg">Contact us</Link>
+            </div>
+          </motion.section>
 
-        {/* Stats */}
-        <section className="section-sm">
-          <div className="container">
-            <div className="grid-4">
-              {STATS.map((s, i) => (
-                <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: '28px 24px', textAlign: 'center' }}>
-                  <s.icon size={24} style={{ color: 'var(--blue)', margin: '0 auto 12px' }} />
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, marginBottom: 6 }}>{s.value}</div>
-                  <div style={{ fontSize: '.875rem', color: 'var(--text-3)' }}>{s.label}</div>
-                </motion.div>
-              ))}
-            </div>
+          <div className="about-grid">
+            {VALUES.map((v, i) => (
+              <motion.div key={v.title} className="about-card" initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+                <span className="about-icon"><v.icon /></span>
+                <h3>{v.title}</h3>
+                <p>{v.desc}</p>
+              </motion.div>
+            ))}
           </div>
-        </section>
-
-        {/* Values */}
-        <section className="section" style={{ background: 'var(--surface-2)' }}>
-          <div className="container">
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2 className="display-md">Why Choose <span className="gradient-text">PrimeGadgets</span>?</h2>
-            </div>
-            <div className="grid-4">
-              {VALUES.map((v, i) => (
-                <motion.div key={v.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 28 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 'var(--r-lg)', background: 'rgba(0,102,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: 'var(--blue)' }}><v.icon size={22} /></div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, marginBottom: 8 }}>{v.title}</h3>
-                  <p style={{ fontSize: '.875rem', color: 'var(--text-2)', lineHeight: 1.7 }}>{v.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Team */}
-        <section className="section">
-          <div className="container">
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2 className="display-md">Meet the Team</h2>
-            </div>
-            <div className="grid-3" style={{ maxWidth: 800, margin: '0 auto' }}>
-              {TEAM.map((m, i) => (
-                <motion.div key={m.name} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24, textAlign: 'center' }}>
-                  <img src={m.img} alt={m.name} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 14px', border: '3px solid var(--border)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700 }}>{m.name}</h3>
-                  <p style={{ color: 'var(--blue)', fontSize: '.82rem', fontWeight: 600, marginBottom: 10 }}>{m.role}</p>
-                  <p style={{ fontSize: '.82rem', color: 'var(--text-2)', lineHeight: 1.6 }}>{m.bio}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section style={{ padding: '60px 0', background: 'var(--blue)', textAlign: 'center', color: '#fff' }}>
-          <div className="container" style={{ maxWidth: 640 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', marginBottom: 16 }}>Ready to Upgrade?</h2>
-            <p style={{ opacity: .85, marginBottom: 28, fontSize: '1.05rem' }}>Explore 1,200+ premium gadgets, all with official warranty and fast UAE delivery.</p>
-            <Link to="/products" className="btn btn-lg" style={{ background: '#fff', color: 'var(--blue)', fontWeight: 700 }}>Shop Now →</Link>
-          </div>
-        </section>
+        </div>
       </div>
+      <style>{`
+        .about-hero { text-align: center; max-width: 720px; margin: 0 auto 40px; }
+        .about-kicker { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(61,139,255,.12); color: var(--blue); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+        .about-hero p { font-size: 1.05rem; color: var(--text-2); line-height: 1.8; margin-top: 14px; }
+        .about-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+        .about-ctas .btn { gap: 8px; }
+        .about-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .about-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; }
+        .about-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(61,139,255,.12); color: var(--blue); font-size: 1.25rem; margin-bottom: 14px; }
+        .about-card h3 { font-family: var(--font-display); font-size: 1.02rem; margin-bottom: 6px; }
+        .about-card p { font-size: .9rem; color: var(--text-2); line-height: 1.65; }
+        @media (max-width: 860px) { .about-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 560px) { .about-grid { grid-template-columns: 1fr; } }
+      `}</style>
     </>
   );
 }

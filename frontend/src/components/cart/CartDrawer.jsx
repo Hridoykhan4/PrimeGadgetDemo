@@ -1,112 +1,120 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiX, FiTrash2, FiShoppingBag, FiArrowRight, FiPlus, FiMinus } from 'react-icons/fi';
-import { useCartStore } from '../../store/index.js';
+import { FiX, FiTrash2, FiShoppingBag, FiArrowRight, FiPlus, FiMinus, FiTruck, FiLock, FiCheckCircle } from 'react-icons/fi';
+import { useCartStore, useCartTotals, fmtAED, FREE_SHIPPING_MIN } from '../../store/index.js';
 import { useCartDrawerStore } from '../ui/uiStore.js';
+import { SafeImage } from '../product/ProductCard.jsx';
 import './CartDrawer.css';
+
+export function FreeShippingMeter({ subtotal, toFreeShipping }) {
+  const pct = Math.min(100, (subtotal / FREE_SHIPPING_MIN) * 100);
+  return (
+    <div className="ship-meter">
+      <p>
+        {toFreeShipping > 0
+          ? <><FiTruck aria-hidden="true" /> Add <strong>AED {fmtAED(toFreeShipping)}</strong> more for <strong>free delivery</strong></>
+          : <><FiCheckCircle aria-hidden="true" /> You've unlocked <strong>free delivery</strong></>}
+      </p>
+      <div className="ship-meter-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label="Progress to free delivery">
+        <span style={{ width: `${pct}%` }} className={toFreeShipping === 0 ? 'done' : ''} />
+      </div>
+    </div>
+  );
+}
 
 export default function CartDrawer() {
   const { isOpen, close } = useCartDrawerStore();
-  const { items, removeItem, updateQty, subtotal, shipping, tax, total } = useCartStore();
+  const { items, removeItem, updateQty } = useCartStore();
+  const { count, subtotal, shipping, tax, total, toFreeShipping } = useCartTotals();
   const navigate = useNavigate();
 
-  const handleCheckout = () => { close(); navigate('/checkout'); };
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => e.key === 'Escape' && close();
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [isOpen, close]);
+
+  const go = (path) => { close(); navigate(path); };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div className="drawer-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={close} />
-          <motion.div
+          <motion.aside
             className="cart-drawer"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 280 }}
+            role="dialog" aria-modal="true" aria-label="Shopping cart"
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 34, stiffness: 320 }}
           >
-            {/* Header */}
-            <div className="drawer-header">
+            <header className="cd-head">
               <div>
-                <h3 className="drawer-title">Shopping Cart</h3>
-                <p className="drawer-count">{items.length} {items.length === 1 ? 'item' : 'items'}</p>
+                <h2 className="cd-title">Your cart</h2>
+                <p className="cd-sub">{count} {count === 1 ? 'item' : 'items'}</p>
               </div>
-              <button className="drawer-close" onClick={close}><FiX /></button>
-            </div>
+              <button className="cd-close" onClick={close} aria-label="Close cart"><FiX /></button>
+            </header>
 
-            {/* Items */}
-            <div className="drawer-body">
-              {items.length === 0 ? (
-                <div className="drawer-empty">
-                  <FiShoppingBag className="empty-bag-icon" />
-                  <h4>Your cart is empty</h4>
-                  <p>Add some amazing gadgets</p>
-                  <button className="btn btn-primary btn-sm" onClick={() => { close(); navigate('/products'); }}>
-                    Browse Products
-                  </button>
-                </div>
-              ) : (
-                <div className="drawer-items">
+            {items.length === 0 ? (
+              <div className="cd-empty">
+                <span className="cd-empty-icon"><FiShoppingBag aria-hidden="true" /></span>
+                <h3>Your cart is empty</h3>
+                <p>Browse our top picks and add something you love.</p>
+                <button className="btn btn-primary" onClick={() => go('/products')}>Start shopping <FiArrowRight /></button>
+              </div>
+            ) : (
+              <>
+                <div className="cd-meter"><FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} /></div>
+                <ul className="cd-items">
                   <AnimatePresence initial={false}>
                     {items.map((item) => (
-                      <motion.div
-                        key={item.key}
-                        className="drawer-item"
-                        layout
-                        initial={{ opacity: 0, x: 40 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 40, height: 0, marginBottom: 0 }}
-                        transition={{ duration: 0.22 }}
+                      <motion.li
+                        key={item.key} className="cd-item" layout
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: 40, transition: { duration: 0.18 } }}
                       >
-                        <div className="drawer-item-img">
-                          <img src={item.image} alt={item.name} loading="lazy" />
-                        </div>
-                        <div className="drawer-item-info">
-                          <h5 className="drawer-item-name line-clamp-2">{item.name}</h5>
-                          {item.variant && <p className="drawer-item-variant">{item.variant.name}: {item.variant.label}</p>}
-                          <div className="drawer-item-bottom">
-                            <div className="drawer-qty-ctrl">
-                              <button onClick={() => updateQty(item.key, item.qty - 1)} disabled={item.qty <= 1}><FiMinus size={12} /></button>
-                              <span>{item.qty}</span>
-                              <button onClick={() => updateQty(item.key, item.qty + 1)} disabled={item.qty >= item.stock}><FiPlus size={12} /></button>
+                        <Link to={`/products/${item._id}`} className="cd-img" onClick={close}>
+                          <SafeImage src={item.image} alt={item.name} className="cd-img-el" />
+                        </Link>
+                        <div className="cd-info">
+                          <Link to={`/products/${item._id}`} className="cd-name" onClick={close}>{item.name}</Link>
+                          <div className="cd-unit">AED {fmtAED(item.price)} each</div>
+                          <div className="cd-row">
+                            <div className="qty" role="group" aria-label={`Quantity for ${item.name}`}>
+                              <button onClick={() => updateQty(item.key, item.qty - 1)} aria-label="Decrease quantity">
+                                {item.qty === 1 ? <FiTrash2 /> : <FiMinus />}
+                              </button>
+                              <span aria-live="polite">{item.qty}</span>
+                              <button onClick={() => updateQty(item.key, item.qty + 1)} disabled={item.qty >= (item.stock || 99)} aria-label="Increase quantity"><FiPlus /></button>
                             </div>
-                            <span className="drawer-item-price">AED {(item.price * item.qty).toLocaleString()}</span>
+                            <strong className="cd-line">AED {fmtAED(item.price * item.qty)}</strong>
                           </div>
                         </div>
-                        <button className="drawer-remove" onClick={() => removeItem(item.key)}><FiTrash2 size={15} /></button>
-                      </motion.div>
+                        <button className="cd-remove" onClick={() => removeItem(item.key)} aria-label={`Remove ${item.name}`}><FiX /></button>
+                      </motion.li>
                     ))}
                   </AnimatePresence>
-                </div>
-              )}
-            </div>
+                </ul>
 
-            {/* Footer */}
-            {items.length > 0 && (
-              <div className="drawer-footer">
-                <div className="drawer-summary">
-                  <div className="summary-row"><span>Subtotal</span><span>AED {subtotal.toLocaleString()}</span></div>
-                  <div className="summary-row"><span>Shipping</span><span className={shipping === 0 ? 'free-tag' : ''}>{shipping === 0 ? 'FREE' : `AED ${shipping}`}</span></div>
-                  <div className="summary-row"><span>VAT (5%)</span><span>AED {tax.toFixed(2)}</span></div>
-                </div>
-                <div className="drawer-total">
-                  <span>Total</span>
-                  <strong>AED {total.toFixed(2)}</strong>
-                </div>
-                {shipping > 0 && (
-                  <p className="free-ship-note">
-                    Add AED {(200 - subtotal).toFixed(0)} more for free shipping
-                  </p>
-                )}
-                <button className="btn btn-primary btn-full btn-lg" onClick={handleCheckout}>
-                  Checkout <FiArrowRight />
-                </button>
-                <Link to="/cart" className="btn btn-secondary btn-full" onClick={close} style={{ marginTop: 8, justifyContent: 'center' }}>
-                  View Full Cart
-                </Link>
-              </div>
+                <footer className="cd-foot">
+                  <dl className="cd-sum">
+                    <div><dt>Subtotal</dt><dd>AED {fmtAED(subtotal)}</dd></div>
+                    <div><dt>Delivery</dt><dd className={shipping === 0 ? 'free' : ''}>{shipping === 0 ? 'Free' : `AED ${fmtAED(shipping)}`}</dd></div>
+                    <div><dt>VAT (5%)</dt><dd>AED {fmtAED(tax)}</dd></div>
+                    <div className="cd-total"><dt>Total</dt><dd>AED {fmtAED(total)}</dd></div>
+                  </dl>
+                  <button className="btn btn-primary btn-full btn-lg cd-checkout" onClick={() => go('/checkout')}>
+                    <FiLock aria-hidden="true" /> Checkout · AED {fmtAED(total)}
+                  </button>
+                  <p className="cd-note">No account needed · Cash on delivery or card</p>
+                  <button className="cd-continue" onClick={close}>Continue shopping</button>
+                </footer>
+              </>
             )}
-          </motion.div>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>

@@ -1,10 +1,10 @@
 // routes/payments.js
 const express = require('express');
 const r = express.Router();
-const { protect } = require('../middleware/auth');
+const { optionalAuth } = require('../middleware/auth');
 const { createCheckoutSession, verifyCheckoutSession, getPublishableKey } = require('../controllers/paymentController');
 
 r.get('/key', getPublishableKey);
-r.post('/checkout-session', protect, createCheckoutSession);
-r.get('/verify/:orderId', protect, verifyCheckoutSession);
+r.post('/checkout-session', optionalAuth, createCheckoutSession);
+r.get('/verify/:orderId', optionalAuth, verifyCheckoutSession);
 module.exports = r;

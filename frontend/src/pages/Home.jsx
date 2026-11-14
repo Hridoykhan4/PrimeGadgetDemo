@@ -4,26 +4,19 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import {
   FiArrowRight, FiChevronLeft, FiChevronRight, FiTruck, FiShield, FiCreditCard,
-  FiMessageCircle, FiShoppingCart, FiCoffee, FiScissors, FiGift, FiTool, FiHome,
-  FiSmartphone, FiGrid, FiPause, FiPlay, FiTag, FiTrendingUp, FiDollarSign, FiZap,
+  FiMessageCircle, FiShoppingCart, FiGrid, FiPause, FiPlay, FiTag, FiTrendingUp, FiDollarSign, FiZap,
 } from 'react-icons/fi';
 import api from '../utils/api.js';
 import ProductCard from '../components/product/ProductCard.jsx';
-import { useCartStore } from '../store/index.js';
+import ProductRail from '../components/product/ProductRail.jsx';
+import { useCartStore, fmtAED } from '../store/index.js';
+import { recentlyViewed } from '../store/catalog.js';
+import { CATEGORY_ICONS } from '../utils/categories.jsx';
 import { useCartDrawerStore } from '../components/ui/uiStore.js';
-import toast from 'react-hot-toast';
 import './Home.css';
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
 
-const CATEGORY_ICONS = {
-  'Home & Kitchen': FiCoffee,
-  'Beauty & Personal Care': FiScissors,
-  'Kids & Toys': FiGift,
-  'Tools & Outdoor': FiTool,
-  'Smart Home': FiHome,
-  Accessories: FiSmartphone,
-};
 
 const PRICE_TABS = [
   { label: 'Under AED 20', max: 20 },
@@ -31,9 +24,6 @@ const PRICE_TABS = [
   { label: 'Under AED 60', max: 60 },
 ];
 
-const SHELVES = ['Home & Kitchen', 'Beauty & Personal Care', 'Kids & Toys'];
-
-const fmtAED = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const shortName = (name = '') => name.split(/[,–-]/)[0].trim().slice(0, 60);
 const priceOf = (p) => (p.salePrice > 0 && p.salePrice < p.price ? p.salePrice : p.price);
 const img800 = (p) => p.images?.[0]?.url;
@@ -89,21 +79,21 @@ function HeroSlider({ slides }) {
           >
             <div className="hero2-copy">
               <div className="hero2-eyebrow">
-                <span className="hero2-chip"><FiTrendingUp aria-hidden="true" /> Best seller</span>
-                {p.totalSold > 0 && <span>{p.totalSold.toLocaleString()} sold</span>}
+                <span className="hero2-chip"><FiTrendingUp aria-hidden="true" /> Top pick</span>
+                <span>{p.category}</span>
               </div>
               <h1 className="hero2-title">{shortName(p.name)}</h1>
               <p className="hero2-desc line-clamp-2">{p.name}</p>
               <div className="hero2-price">
                 <span className="hero2-cur">AED</span>
                 <span className="hero2-amt">{fmtAED(priceOf(p))}</span>
-                <span className="hero2-vat">incl. VAT shown at checkout</span>
+                <span className="hero2-vat">+ 5% VAT at checkout</span>
               </div>
               <div className="hero2-ctas">
                 <button
                   type="button"
                   className="btn btn-primary btn-lg"
-                  onClick={() => { addItem(p, 1); toast.success('Added to cart'); openCart(); }}
+                  onClick={() => { addItem(p, 1); openCart(); }}
                 >
                   <FiShoppingCart aria-hidden="true" /> Add to cart
                 </button>
@@ -111,7 +101,7 @@ function HeroSlider({ slides }) {
                   View details <FiArrowRight aria-hidden="true" />
                 </Link>
               </div>
-              <p className="hero2-note"><FiTruck aria-hidden="true" /> In stock in the UAE · delivery in 1 business day</p>
+              <p className="hero2-note"><FiTruck aria-hidden="true" /> In stock in the UAE · Cash on delivery available</p>
             </div>
             <Link to={`/products/${p._id}`} className="hero2-visual" tabIndex={-1} aria-hidden="true">
               <div className="hero2-blob" />
@@ -147,35 +137,18 @@ function HeroSlider({ slides }) {
       </div>
 
       <div className="hero2-side">
-        <Link to="/products?price[lte]=20&sort=-totalSold" className="promo-tile promo-tile-a">
+        <Link to="/products?price[lte]=20&sort=price" className="promo-tile promo-tile-a">
           <span className="promo-kicker"><FiTag aria-hidden="true" /> Everyday low prices</span>
           <strong>Under AED 20</strong>
           <span className="promo-link">Shop now <FiArrowRight aria-hidden="true" /></span>
         </Link>
-        <Link to="/products?sort=-totalSold" className="promo-tile promo-tile-b">
+        <Link to="/products" className="promo-tile promo-tile-b">
           <span className="promo-kicker"><FiTruck aria-hidden="true" /> Free delivery</span>
           <strong>On orders over AED 200</strong>
           <span className="promo-link">Start shopping <FiArrowRight aria-hidden="true" /></span>
         </Link>
       </div>
     </section>
-  );
-}
-
-/* ── Horizontal product rail ─────────────────────────────────────────────── */
-function Rail({ products }) {
-  const ref = useRef(null);
-  const scroll = (d) => ref.current?.scrollBy({ left: d * ref.current.clientWidth * 0.85, behavior: 'smooth' });
-  return (
-    <div className="rail-wrap">
-      <button type="button" className="rail-btn rail-prev" onClick={() => scroll(-1)} aria-label="Scroll left"><FiChevronLeft /></button>
-      <div className="rail" ref={ref}>
-        {products.map((p, k) => (
-          <div className="rail-item" key={p._id}><ProductCard product={p} index={k} /></div>
-        ))}
-      </div>
-      <button type="button" className="rail-btn rail-next" onClick={() => scroll(1)} aria-label="Scroll right"><FiChevronRight /></button>
-    </div>
   );
 }
 
@@ -206,25 +179,29 @@ export default function Home() {
   const [priceItems, setPriceItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [recent] = useState(() => recentlyViewed.get());
+
   useEffect(() => {
     Promise.all([
-      api.get('/products', { params: { sort: '-totalSold', limit: 10 } }),
+      api.get('/products', { params: { sort: '-isBestSeller,-isFeatured,-createdAt', limit: 10 } }),
       api.get('/products/new-arrivals'),
       api.get('/products/categories'),
-      ...SHELVES.map((c) => api.get('/products', { params: { category: c, sort: '-totalSold', limit: 12 } })),
     ])
-      .then(([b, nw, cats, ...sh]) => {
+      .then(async ([b, nw, cats]) => {
         setBest(b.data.products);
         setNewest(nw.data.products);
-        setCategories(cats.data.categories.sort((a, z) => z.count - a.count));
-        setShelves(Object.fromEntries(SHELVES.map((c, k) => [c, sh[k].data.products])));
+        const sorted = cats.data.categories.filter((c) => c.count > 0).sort((a, z) => z.count - a.count);
+        setCategories(sorted);
+        const shelfCats = sorted.filter((c) => c.count >= 3).slice(0, 4).map((c) => c.name);
+        const res = await Promise.all(shelfCats.map((c) => api.get('/products', { params: { category: c, sort: '-isBestSeller,-createdAt', limit: 14 } })));
+        setShelves(Object.fromEntries(shelfCats.map((c, k) => [c, res[k].data.products])));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    api.get('/products', { params: { 'price[lte]': PRICE_TABS[priceTab].max, sort: '-totalSold', limit: 10 } })
+    api.get('/products', { params: { 'price[lte]': PRICE_TABS[priceTab].max, sort: '-isBestSeller,price', limit: 14 } })
       .then(({ data }) => setPriceItems(data.products))
       .catch(() => setPriceItems([]));
   }, [priceTab]);
@@ -247,7 +224,7 @@ export default function Home() {
         <section className="trust2" aria-label="Why shop with PrimeGadgets">
           <div className="container trust2-grid">
             {[
-              [FiTruck, 'Fast UAE delivery', 'Local stock · 1 business day'],
+              [FiTruck, 'Fast UAE delivery', 'Shipped from local stock'],
               [FiDollarSign, 'Cash on delivery', 'Pay when it arrives'],
               [FiCreditCard, 'Secure card payment', 'Visa, Mastercard, Apple Pay via Stripe'],
               [FiMessageCircle, 'WhatsApp support', 'Real people, quick replies'],
@@ -281,7 +258,7 @@ export default function Home() {
 
         {/* Best sellers */}
         <section className="container home-sec">
-          <SectionHead eyebrow="Most bought" icon={FiTrendingUp} title="Best sellers in the UAE" to="/products?sort=-totalSold" />
+          <SectionHead eyebrow="Customer favourites" icon={FiTrendingUp} title="Top picks for you" to="/products" />
           {loading ? <GridSkeleton /> : (
             <div className="home-grid">
               {best.map((p, k) => <ProductCard key={p._id} product={p} index={k} />)}
@@ -306,20 +283,20 @@ export default function Home() {
                   {t.label}
                 </button>
               ))}
-              <Link to={`/products?price[lte]=${PRICE_TABS[priceTab].max}&sort=-totalSold`} className="sec-link price-all">
+              <Link to={`/products?price[lte]=${PRICE_TABS[priceTab].max}&sort=price`} className="sec-link price-all">
                 See all <FiArrowRight aria-hidden="true" />
               </Link>
             </div>
-            {priceItems.length ? <Rail products={priceItems} /> : <GridSkeleton />}
+            {priceItems.length ? <ProductRail products={priceItems} label={PRICE_TABS[priceTab].label} /> : <GridSkeleton />}
           </div>
         </section>
 
         {/* Category shelves */}
-        {SHELVES.map((c) =>
+        {Object.keys(shelves).map((c) =>
           shelves[c]?.length ? (
             <section key={c} className="container home-sec">
               <SectionHead title={c} icon={CATEGORY_ICONS[c]} eyebrow="Popular picks" to={`/products?category=${encodeURIComponent(c)}`} />
-              <Rail products={shelves[c]} />
+              <ProductRail products={shelves[c]} label={c} />
             </section>
           ) : null
         )}
@@ -334,6 +311,13 @@ export default function Home() {
           </section>
         )}
 
+        {recent.length > 2 && (
+          <section className="container home-sec">
+            <SectionHead eyebrow="Pick up where you left off" title="Recently viewed" />
+            <ProductRail products={recent} label="Recently viewed" />
+          </section>
+        )}
+
         {/* Promise + WhatsApp */}
         <section className="container home-sec">
           <div className="promise">
@@ -342,6 +326,7 @@ export default function Home() {
               <ul className="promise-list">
                 <li><FiShield aria-hidden="true" /><div><strong>See the price you pay</strong><span>VAT and delivery are shown before you place your order.</span></div></li>
                 <li><FiTruck aria-hidden="true" /><div><strong>Shipped from inside the UAE</strong><span>No international waiting. Free delivery over AED 200.</span></div></li>
+                <li><FiZap aria-hidden="true" /><div><strong>No account needed</strong><span>Check out as a guest in under a minute and track your order with your mobile number.</span></div></li>
                 <li><FiCreditCard aria-hidden="true" /><div><strong>Pay your way</strong><span>Cash on delivery, or card / Apple Pay / Google Pay through Stripe.</span></div></li>
               </ul>
             </div>

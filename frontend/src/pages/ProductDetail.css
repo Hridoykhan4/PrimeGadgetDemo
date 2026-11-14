@@ -726,3 +726,19 @@
 .pd-buy-btn:disabled, .pd-buynow-btn:disabled { opacity: .45; cursor: not-allowed; }
 .pd-pay-note { font-size: .78rem; color: var(--text-3); margin: 8px 0 14px; }
 @media (max-width: 480px) { .pd-buy-group { grid-template-columns: 1fr; } }
+
+.pd-sticky { display: none; }
+@media (max-width: 860px) {
+  .pd-sticky {
+    position: fixed; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom)); z-index: 980;
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    background: var(--bg-2); border-top: 1px solid var(--border); box-shadow: 0 -8px 24px rgba(0,0,0,.08);
+  }
+  .pd-sticky div { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+  .pd-sticky small { font-size: .7rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pd-sticky strong { font-family: var(--font-display); font-size: 1.05rem; }
+  .pd-sticky .btn { height: 48px; }
+  .pd-sticky .btn-secondary { width: 48px; padding: 0; justify-content: center; }
+  .pd-sticky .btn-primary { padding: 0 22px; }
+  .pd-page { padding-bottom: 140px; }
+}

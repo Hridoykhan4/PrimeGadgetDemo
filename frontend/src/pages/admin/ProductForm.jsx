@@ -8,7 +8,10 @@ import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor'];
 
-const defaultForm = { name:'',shortDescription:'',description:'',price:'',salePrice:'',category:CATEGORIES[0],brand:'',sku:'',stock:'',warranty:'1 Year',isFeatured:false,isNew:false,isBestSeller:false,isDeal:false,features:[''],specifications:[{key:'',value:''}] };
+// Defined outside the component so inputs keep focus while typing
+const Field = ({ label, children }) => <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{label}</label>{children}</div>;
+
+const defaultForm = { name:'',shortDescription:'',description:'',price:'',salePrice:'',category:'Home & Kitchen',brand:'PrimeGadgets',sku:'',stock:'',warranty:'',isFeatured:false,isNew:false,isBestSeller:false,isDeal:false,features:[''],specifications:[{key:'',value:''}] };
 
 export default function AdminProductForm() {
   const { id } = useParams();
@@ -25,7 +28,7 @@ export default function AdminProductForm() {
     if (!isEdit) return;
     api.get(`/products/${id}`).then(({ data }) => {
       const p = data.product;
-      setForm({ name:p.name, shortDescription:p.shortDescription||'', description:p.description, price:p.price, salePrice:p.salePrice||'', category:p.category, brand:p.brand, sku:p.sku||'', stock:p.stock, warranty:p.warranty||'1 Year', isFeatured:p.isFeatured, isNew:p.isNew, isBestSeller:p.isBestSeller, isDeal:p.isDeal, features:p.features?.length ? p.features : [''], specifications:p.specifications?.length ? p.specifications : [{key:'',value:''}] });
+      setForm({ name:p.name, shortDescription:p.shortDescription||'', description:p.description, price:p.price, salePrice:p.salePrice||'', category:p.category, brand:p.brand, sku:p.sku||'', stock:p.stock, warranty:p.warranty||'', isFeatured:p.isFeatured, isNew:p.isNew, isBestSeller:p.isBestSeller, isDeal:p.isDeal, features:p.features?.length ? p.features : [''], specifications:p.specifications?.length ? p.specifications : [{key:'',value:''}] });
       setExistingImages(p.images || []);
     }).finally(() => setFetching(false));
   }, [id, isEdit]);
@@ -38,33 +41,46 @@ export default function AdminProductForm() {
     setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setLoading(true);
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
-        if (k === 'features' || k === 'specifications') return;
-        fd.append(k, v);
-      });
-      fd.append('features', JSON.stringify(form.features.filter(Boolean)));
-      fd.append('specifications', JSON.stringify(form.specifications.filter(s => s.key)));
-      newImages.forEach(img => fd.append('images', img));
+  const removeImage = (i) => {
+    if (i < existingImages.length) { setExistingImages((imgs) => imgs.filter((_, k) => k !== i)); return; }
+    const j = i - existingImages.length;
+    setNewImages((f) => f.filter((_, k) => k !== j));
+    setPreviews((pv) => pv.filter((_, k) => k !== j));
+  };
 
-      if (isEdit) {
-        await api.put(`/products/${id}`, Object.fromEntries(fd)); // send as JSON for edit
-        toast.success('Product updated!');
-      } else {
-        await api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        toast.success('Product created!');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!existingImages.length && !newImages.length) { toast.error('Add at least one product image'); return; }
+    const price = Number(form.price); const salePrice = Number(form.salePrice) || 0;
+    if (salePrice && salePrice >= price) { toast.error('Sale price must be lower than the price'); return; }
+    setLoading(true);
+    try {
+      // 1) upload new images to our media storage
+      const uploaded = [];
+      for (const file of newImages) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const { data } = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 });
+        uploaded.push({ url: data.url, public_id: data.public_id, alt: form.name });
       }
+      // 2) save the product as JSON
+      const body = {
+        ...form,
+        price, salePrice, stock: parseInt(form.stock, 10) || 0,
+        features: form.features.map((f) => f.trim()).filter(Boolean),
+        specifications: form.specifications.filter((sp) => sp.key && sp.value),
+        images: [...existingImages, ...uploaded],
+      };
+      if (!body.sku) delete body.sku;
+      if (!body.warranty) delete body.warranty;
+      if (isEdit) { await api.put(`/products/${id}`, body); toast.success('Product updated'); }
+      else { await api.post('/products', body); toast.success('Product created'); }
       navigate('/admin/products');
     } catch (err) { toast.error(err.response?.data?.message || 'Save failed'); }
     finally { setLoading(false); }
   };
 
   if (fetching) return <AdminLayout><div className="loading-screen"><div className="spinner" /></div></AdminLayout>;
-
-  const Field = ({ label, children }) => <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{label}</label>{children}</div>;
 
   return (
     <AdminLayout>
@@ -102,7 +118,7 @@ export default function AdminProductForm() {
                   <Field label="Sale Price (AED)"><input className="input" type="number" value={form.salePrice} onChange={set('salePrice')} min="0" /></Field>
                   <Field label="Stock *"><input className="input" type="number" value={form.stock} onChange={set('stock')} required min="0" /></Field>
                   <Field label="SKU"><input className="input" value={form.sku} onChange={set('sku')} placeholder="PG-CAT-001" /></Field>
-                  <Field label="Warranty"><input className="input" value={form.warranty} onChange={set('warranty')} /></Field>
+                  <Field label="Warranty (optional)"><input className="input" value={form.warranty} onChange={set('warranty')} placeholder="e.g. 6 months" /></Field>
                 </div>
               </div>
 
@@ -139,8 +155,10 @@ export default function AdminProductForm() {
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Images</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
                   {[...existingImages, ...previews.map(src => ({ url: src }))].map((img, i) => (
-                    <div key={i} style={{ aspectRatio: '1', borderRadius: 'var(--r)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 'var(--r)', overflow: 'hidden', border: '1px solid var(--border)', background: '#fff' }}>
+                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      {i === 0 && <span style={{ position: 'absolute', left: 4, bottom: 4, fontSize: '.6rem', fontWeight: 700, background: 'var(--blue)', color: '#fff', padding: '1px 6px', borderRadius: 6 }}>Main</span>}
+                      <button type="button" onClick={() => removeImage(i)} aria-label="Remove image" style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,.6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX size={12} /></button>
                     </div>
                   ))}
                 </div>
@@ -154,7 +172,7 @@ export default function AdminProductForm() {
               {/* Flags */}
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: 24 }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Visibility</h3>
-                {[['isFeatured','Featured'],['isNew','New Arrival'],['isBestSeller','Best Seller'],['isDeal','On Deal']].map(([k, label]) => (
+                {[['isFeatured','Featured on home'],['isNew','New arrival badge'],['isBestSeller','Top pick badge'],['isDeal','On deal']].map(([k, label]) => (
                   <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, cursor: 'pointer', fontSize: '.875rem', color: 'var(--text-2)' }}>
                     <input type="checkbox" checked={form[k]} onChange={set(k)} style={{ width: 16, height: 16, accentColor: 'var(--blue)' }} /> {label}
                   </label>

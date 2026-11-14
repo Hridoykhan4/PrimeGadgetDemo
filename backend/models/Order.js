@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
   orderNumber: { type: String, unique: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // Guest orders are opened with this secret (sent once to the buyer's browser, never listed)
+  accessKey: { type: String, select: false, index: true },
+  isGuest: { type: Boolean, default: false },
   items: [{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     name: String, image: String, price: Number, quantity: { type: Number, default: 1 },
@@ -11,10 +14,12 @@ const OrderSchema = new mongoose.Schema({
   shippingAddress: {
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
+    email: { type: String, trim: true, lowercase: true },
     street: { type: String, required: true },
     area: String, city: { type: String, default: 'Dubai' },
     emirate: { type: String, default: 'Dubai' },
-    country: { type: String, default: 'UAE' }
+    country: { type: String, default: 'UAE' },
+    landmark: String
   },
   paymentMethod: { type: String, enum: ['card', 'cod', 'apple_pay', 'google_pay'], default: 'cod' },
   paymentResult: { id: String, status: String, update_time: String, email: String },
@@ -38,6 +43,7 @@ const OrderSchema = new mongoose.Schema({
   trackingNumber: String,
   notes: String,
   cancelReason: String,
+  stockReleased: { type: Boolean, default: false },
 }, { timestamps: true });
 
 OrderSchema.pre('save', function(next) {

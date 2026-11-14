@@ -56,3 +56,10 @@
   .filter-close { display: flex; }
   .filter-toggle-btn { display: flex !important; }
 }
+
+.filter-opt { display: flex; align-items: center; gap: 8px; }
+.filter-count { font-size: .72rem; color: var(--text-3); background: var(--surface-2); padding: 1px 8px; border-radius: 999px; }
+.filter-opt.active .filter-count { background: rgba(255,255,255,.2); color: inherit; }
+@media (max-width: 600px) {
+  .shop-cards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+}

@@ -5,15 +5,17 @@ import { Helmet } from 'react-helmet-async';
 import { FiFilter, FiX, FiGrid, FiList, FiChevronDown, FiSearch, FiSliders } from 'react-icons/fi';
 import api from '../utils/api.js';
 import ProductCard from '../components/product/ProductCard.jsx';
+import { useCatalogStore } from '../store/catalog.js';
+import { CategoryIcon } from '../utils/categories.jsx';
 import './Products.css';
 
-const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor'];
+const DEFAULT_SORT = '-isBestSeller,-createdAt';
 const SORTS = [
+  { value: DEFAULT_SORT, label: 'Recommended' },
   { value: '-createdAt', label: 'Newest First' },
   { value: 'price', label: 'Price: Low to High' },
   { value: '-price', label: 'Price: High to Low' },
   { value: '-ratings', label: 'Top Rated' },
-  { value: '-totalSold', label: 'Best Selling' },
 ];
 const PRICE_RANGES = [
   { label: 'Under AED 20', min: '', max: 20 },
@@ -31,11 +33,13 @@ export default function Products() {
   const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
+  const { categories, load: loadCats } = useCatalogStore();
+  useEffect(() => { loadCats(); }, []);
 
   const [filters, setFilters] = useState({
     keyword: searchParams.get('keyword') || '',
     category: searchParams.get('category') || '',
-    sort: searchParams.get('sort') || '-totalSold',
+    sort: searchParams.get('sort') || DEFAULT_SORT,
     minPrice: searchParams.get('price[gte]') || '', maxPrice: searchParams.get('price[lte]') || '',
     minRating: '', inStock: false,
   });
@@ -78,7 +82,7 @@ export default function Products() {
 
   const updateFilter = (key, val) => { setFilters(f => ({ ...f, [key]: val })); setPage(1); };
   const clearFilters = () => {
-    setFilters({ keyword: '', category: '', sort: '-totalSold', minPrice: '', maxPrice: '', minRating: '', inStock: false });
+    setFilters({ keyword: '', category: '', sort: DEFAULT_SORT, minPrice: '', maxPrice: '', minRating: '', inStock: false });
     setPage(1); setSearchParams({});
   };
 
@@ -131,9 +135,9 @@ export default function Products() {
                 <button className={`filter-opt ${!filters.category ? 'active' : ''}`} onClick={() => updateFilter('category', '')}>
                   All Categories
                 </button>
-                {CATEGORIES.map(c => (
-                  <button key={c} className={`filter-opt ${filters.category === c ? 'active' : ''}`} onClick={() => updateFilter('category', c)}>
-                    {c}
+                {categories.map(c => (
+                  <button key={c.name} className={`filter-opt ${filters.category === c.name ? 'active' : ''}`} onClick={() => updateFilter('category', c.name)}>
+                    <CategoryIcon name={c.name} /> <span style={{ flex: 1, textAlign: 'left' }}>{c.name}</span> <span className="filter-count">{c.count}</span>
                   </button>
                 ))}
               </div>
@@ -200,7 +204,7 @@ export default function Products() {
 
             {/* Grid */}
             {loading ? (
-              <div className={viewMode === 'grid' ? 'grid-4' : 'products-list-view'}>
+              <div className={viewMode === 'grid' ? 'grid-4 shop-cards' : 'products-list-view'}>
                 {[...Array(8)].map((_, i) => <div key={i} className="skeleton" style={{ height: viewMode === 'grid' ? 380 : 120 }} />)}
               </div>
             ) : products.length === 0 ? (
@@ -211,7 +215,7 @@ export default function Products() {
                 <button className="btn btn-primary" onClick={clearFilters}>Clear All Filters</button>
               </div>
             ) : (
-              <div className={viewMode === 'grid' ? 'grid-3' : 'products-list-view'}>
+              <div className={viewMode === 'grid' ? 'grid-3 shop-cards' : 'products-list-view'}>
                 {products.map((p, i) => <ProductCard key={p._id} product={p} index={i} />)}
               </div>
             )}
