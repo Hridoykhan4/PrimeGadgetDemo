@@ -21,6 +21,10 @@ const CATEGORIES = [
   { name: 'Smart Home', icon: '🏠' },
   { name: 'Laptops', icon: '💻' },
   { name: 'Accessories', icon: '🔌' },
+  { name: 'Home & Kitchen', icon: '🍳' },
+  { name: 'Beauty & Personal Care', icon: '💇' },
+  { name: 'Kids & Toys', icon: '🧸' },
+  { name: 'Tools & Outdoor', icon: '🧰' },
 ];
 
 const WHATSAPP_URL = 'https://wa.me/971500000000?text=Hello%20PrimeGadgets%2C%20I%20want%20to%20inquire%20about%20your%20products.';

@@ -6,7 +6,7 @@ import AdminLayout from './AdminLayout.jsx';
 import api from '../../utils/api.js';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories'];
+const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor'];
 
 const defaultForm = { name:'',shortDescription:'',description:'',price:'',salePrice:'',category:CATEGORIES[0],brand:'',sku:'',stock:'',warranty:'1 Year',isFeatured:false,isNew:false,isBestSeller:false,isDeal:false,features:[''],specifications:[{key:'',value:''}] };
 

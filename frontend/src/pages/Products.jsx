@@ -7,7 +7,7 @@ import api from '../utils/api.js';
 import ProductCard from '../components/product/ProductCard.jsx';
 import './Products.css';
 
-const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories'];
+const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor'];
 const SORTS = [
   { value: '-createdAt', label: 'Newest First' },
   { value: 'price', label: 'Price: Low to High' },

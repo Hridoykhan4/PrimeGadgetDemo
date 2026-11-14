@@ -17,7 +17,7 @@ const ProductSchema = new mongoose.Schema({
   currency: { type: String, default: 'AED' },
   category: {
     type: String, required: true,
-    enum: ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories']
+    enum: ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor']
   },
   brand: { type: String, required: true },
   sku: { type: String, unique: true, sparse: true },
