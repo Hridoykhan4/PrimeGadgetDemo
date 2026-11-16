@@ -59,7 +59,7 @@ export default function Branding() {
           </div>
           <Field label="Tagline"><input className="adm-input" value={s.brand.tagline || ''} onChange={set('brand', 'tagline')} /></Field>
           <div className="cms-3">
-            <ImageUpload label="Logo" value={s.brand.logoUrl} onChange={set('brand', 'logoUrl')} hint="PNG/SVG-like PNG with transparent background, ~400×100" height={100} />
+            <ImageUpload label="Logo" value={s.brand.logoUrl} onChange={set('brand', 'logoUrl')} hint="PNG with transparent background, about 400×100 px" height={100} />
             <ImageUpload label="Logo for dark mode (optional)" value={s.brand.logoDarkUrl} onChange={set('brand', 'logoDarkUrl')} hint="Light-coloured version" height={100} />
             <ImageUpload label="Favicon (browser tab icon)" value={s.brand.faviconUrl} onChange={set('brand', 'faviconUrl')} hint="Square PNG, 64×64 or larger" height={100} />
           </div>
