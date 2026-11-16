@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiZap } from 'react-icons/fi';
 import { useAuthStore } from '../store/index.js';
+import Brand from '../components/layout/Brand.jsx';
 
 export function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -27,7 +28,7 @@ export function Login() {
       <Helmet><title>Login — PrimeGadgets</title></Helmet>
       <div className="auth-page">
         <motion.div className="auth-card" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="auth-logo"><div className="logo-icon" style={{ width: 44, height: 44, fontSize: '1.3rem' }}><FiZap /></div><div><div className="logo-prime" style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700 }}>PrimeGadgets</div><div className="logo-gadgets" style={{ fontFamily: 'var(--font-display)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue)' }}>UAE</div></div></div>
+          <div className="auth-logo"><Brand size={44} /></div>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-sub">Sign in to your PrimeGadgets account</p>
           <form onSubmit={handleSubmit} className="auth-form">

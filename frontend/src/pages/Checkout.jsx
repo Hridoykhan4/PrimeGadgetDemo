@@ -29,7 +29,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
-  const { subtotal, shipping, tax, total, toFreeShipping, count } = useCartTotals();
+  const { subtotal, shipping, tax, total, toFreeShipping, count, freeShippingMin, vatRate } = useCartTotals();
   const { user } = useAuthStore();
   const addGuestOrder = useGuestOrdersStore((s) => s.add);
   const { profile, save: saveProfile } = useCheckoutProfileStore();
@@ -249,11 +249,11 @@ export default function Checkout() {
                     </li>
                   ))}
                 </ul>
-                <FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} />
+                <FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} freeShippingMin={freeShippingMin} />
                 <dl className="co-sum">
                   <div><dt>Subtotal</dt><dd>AED {fmtAED(subtotal)}</dd></div>
                   <div><dt>Delivery</dt><dd className={shipping === 0 ? 'free' : ''}>{shipping === 0 ? 'Free' : `AED ${fmtAED(shipping)}`}</dd></div>
-                  <div><dt>VAT (5%)</dt><dd>AED {fmtAED(tax)}</dd></div>
+                  <div><dt>VAT ({vatRate}%)</dt><dd>AED {fmtAED(tax)}</dd></div>
                   <div className="co-total"><dt>Total</dt><dd>AED {fmtAED(total)}</dd></div>
                 </dl>
                 {serverError && <p className="co-server-err" role="alert"><FiAlertCircle /> {serverError}</p>}

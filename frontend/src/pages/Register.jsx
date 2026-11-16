@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiZap } from 'react-icons/fi';
 import { useAuthStore } from '../store/index.js';
+import Brand from '../components/layout/Brand.jsx';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -27,13 +28,7 @@ export default function Register() {
       <Helmet><title>Create Account — PrimeGadgets</title></Helmet>
       <div className="auth-page">
         <motion.div className="auth-card" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="auth-logo">
-            <div className="logo-icon" style={{ width: 44, height: 44, fontSize: '1.3rem', background: 'var(--blue)', color: '#fff', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-blue)' }}><FiZap /></div>
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>PrimeGadgets</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue)' }}>Dubai</div>
-            </div>
-          </div>
+          <div className="auth-logo"><Brand size={44} /></div>
           <h1 className="auth-title">Create Account</h1>
           <p className="auth-sub">Optional — save your details and see all your orders in one place</p>
           <form onSubmit={handleSubmit} className="auth-form">

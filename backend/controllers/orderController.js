@@ -5,9 +5,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { AppError } = require('../middleware/errorHandler');
 
-const FREE_SHIPPING_MIN = 200;
-const SHIPPING_FEE = 15;
-const VAT_RATE = 0.05;
+const { commerceOf } = require('./cmsController');
 const EMIRATES = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Fujairah', 'Ras Al Khaimah', 'Umm Al Quwain'];
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -46,6 +44,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   const { items, shippingAddress = {}, paymentMethod = 'cod', notes } = req.body;
   if (!Array.isArray(items) || !items.length) return next(new AppError('Your cart is empty', 400));
   if (!['cod', 'card'].includes(paymentMethod)) return next(new AppError('Choose Cash on Delivery or Card', 400));
+  const { freeShippingMin, shippingFee: SHIPPING_FEE, vatRate, codEnabled, cardEnabled } = await commerceOf();
+  if (paymentMethod === 'cod' && !codEnabled) return next(new AppError('Cash on delivery is not available right now', 400));
+  if (paymentMethod === 'card' && !cardEnabled) return next(new AppError('Card payment is not available right now', 400));
 
   const fullName = String(shippingAddress.fullName || '').trim();
   const street = String(shippingAddress.street || '').trim();
@@ -75,8 +76,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     itemsTotal += price * quantity;
   }
   itemsTotal = round2(itemsTotal);
-  const shippingFee = itemsTotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
-  const tax = round2(itemsTotal * VAT_RATE);
+  const shippingFee = itemsTotal >= freeShippingMin ? 0 : SHIPPING_FEE;
+  const tax = round2(itemsTotal * vatRate);
   const total = round2(itemsTotal + shippingFee + tax);
 
   // Reserve stock atomically; roll back if any line fails

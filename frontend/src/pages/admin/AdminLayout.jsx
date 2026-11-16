@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
-  FiBarChart2, FiPackage, FiShoppingBag, FiUsers, FiHome, FiMenu, FiZap, FiStar, FiMail, FiSun, FiMoon, FiPlus, FiLogOut,
+  FiBarChart2, FiPackage, FiShoppingBag, FiUsers, FiHome, FiMenu, FiStar, FiMail, FiSun, FiMoon, FiPlus, FiLogOut,
+  FiImage, FiLayout, FiGrid, FiSliders,
 } from 'react-icons/fi';
 import { useAuthStore, useThemeStore } from '../../store/index.js';
 import { create } from 'zustand';
 import api from '../../utils/api.js';
+import Brand from '../../components/layout/Brand.jsx';
 import './admin.css';
 
 // Badge counts shared across admin pages (refreshed every minute)
@@ -40,14 +42,20 @@ export default function AdminLayout({ children }) {
     { to: '/admin/messages', icon: FiMail, label: 'Messages', count: messages },
     { to: '/admin/users', icon: FiUsers, label: 'Customers' },
   ];
+  const STORE = [
+    { to: '/admin/home', icon: FiLayout, label: 'Home page' },
+    { to: '/admin/banners', icon: FiImage, label: 'Banners' },
+    { to: '/admin/categories', icon: FiGrid, label: 'Categories' },
+    { to: '/admin/branding', icon: FiSliders, label: 'Branding & settings' },
+  ];
 
   return (
     <div className="adm">
       <div className={`adm-overlay ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
       <aside className={`adm-side ${open ? 'open' : ''}`} aria-label="Admin navigation">
         <Link to="/admin" className="adm-brand">
-          <span className="adm-brand-mark"><FiZap /></span>
-          <span><strong>PrimeGadgets</strong><small>Admin</small></span>
+          <Brand size={32} />
+          <small className="adm-brand-tag">Admin</small>
         </Link>
         <nav className="adm-nav">
           <span className="adm-nav-label">Store</span>
@@ -55,6 +63,12 @@ export default function AdminLayout({ children }) {
             <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `adm-link ${isActive ? 'active' : ''}`}>
               <n.icon aria-hidden="true" /> {n.label}
               {n.count > 0 && <span className="adm-count">{n.count}</span>}
+            </NavLink>
+          ))}
+          <span className="adm-nav-label">Storefront</span>
+          {STORE.map((n) => (
+            <NavLink key={n.to} to={n.to} className={({ isActive }) => `adm-link ${isActive ? 'active' : ''}`}>
+              <n.icon aria-hidden="true" /> {n.label}
             </NavLink>
           ))}
           <span className="adm-nav-label">Quick actions</span>

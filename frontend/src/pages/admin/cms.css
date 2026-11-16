@@ -1,0 +1,81 @@
+.cms-grid { display: flex; flex-direction: column; gap: 16px; max-width: 980px; }
+.cms-card { display: flex; flex-direction: column; gap: 14px; }
+.cms-card h3 { font-family: var(--font-display); font-size: 1.02rem; font-weight: 800; }
+.cms-sub { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin-top: 6px; }
+.cms-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.cms-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px; }
+.cms-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; position: relative; }
+.cms-label { font-size: .8rem; font-weight: 600; color: var(--text); }
+.cms-hint { font-size: .74rem; color: var(--text-3); }
+.cms-field .adm-input, .cms-field .adm-select { width: 100%; }
+.cms-textarea { height: auto; padding: 10px 12px; font-family: inherit; resize: vertical; line-height: 1.5; }
+.cms-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cms-color { width: 44px; height: 42px; border: 1.5px solid var(--border-strong); border-radius: 10px; padding: 3px; background: var(--surface); cursor: pointer; }
+.cms-toggle { display: inline-flex; align-items: center; gap: 10px; font-size: .86rem; color: var(--text-2); cursor: pointer; }
+
+.cms-img { position: relative; border: 1.5px dashed var(--border-strong); border-radius: 12px; background: repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface) 0% 50%) 50% / 16px 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.cms-img img { width: 100%; height: 100%; }
+.cms-img-empty { display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: .8rem; }
+.cms-img-busy { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); }
+
+.cms-icon-btn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); font-size: .86rem; width: fit-content; }
+.cms-icon-btn svg { font-size: 1.15rem; color: var(--blue); }
+.cms-icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); max-width: 420px; }
+.cms-icon-grid button { height: 40px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+.cms-icon-grid button:hover, .cms-icon-grid button.on { background: var(--blue); color: #fff; }
+
+.cms-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.cms-swatches button { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; }
+.cms-swatches button.on { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.cms-picked { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.cms-picked img { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: #fff; flex-shrink: 0; }
+.cms-picked span { flex: 1; min-width: 0; font-size: .84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cms-picked button { width: 30px; height: 30px; border-radius: 8px; background: var(--surface); color: var(--text-2); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+.cms-picked button:disabled { opacity: .35; }
+.cms-multi { display: flex; flex-direction: column; gap: 6px; }
+.cms-results { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin-top: 4px; max-height: 300px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-xl); padding: 6px; }
+.cms-results button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; background: none; color: var(--text); text-align: left; }
+.cms-results button:hover { background: var(--surface-2); }
+.cms-results img { width: 36px; height: 36px; border-radius: 6px; object-fit: contain; background: #fff; }
+.cms-results span { flex: 1; min-width: 0; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cms-results b { font-size: .8rem; white-space: nowrap; }
+.cms-results .cms-results-close { justify-content: center; color: var(--text-3); font-size: .8rem; }
+
+.cms-list { display: flex; flex-direction: column; gap: 8px; }
+.cms-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.cms-item.off { opacity: .55; }
+.cms-item.fixed { background: var(--bg-3); border-style: dashed; }
+.cms-pos { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); font-size: .74rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-2); }
+.cms-thumb { width: 64px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--surface-2); }
+.cms-thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.cms-thumb.theme-blue { background: #0066ff; } .cms-thumb.theme-orange { background: #ff6b00; } .cms-thumb.theme-dark { background: #15171c; }
+.cms-thumb.theme-green { background: #16a34a; } .cms-thumb.theme-purple { background: #8b5cf6; } .cms-thumb.theme-red { background: #ef4444; }
+.cms-type { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-2); color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; overflow: hidden; }
+.cms-type img { width: 100%; height: 100%; object-fit: cover; }
+.cms-item-main { flex: 1; min-width: 0; }
+.cms-item-main strong { display: block; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cms-item-main span { display: flex; align-items: center; gap: 4px; font-size: .76rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cms-move { display: inline-flex; gap: 4px; }
+.cms-move .adm-icon-btn:disabled, .cms-item .adm-icon-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.cms-seg { display: inline-flex; padding: 4px; border-radius: 12px; background: var(--surface-2); gap: 4px; width: fit-content; flex-wrap: wrap; }
+.cms-seg button { height: 36px; padding: 0 14px; border-radius: 9px; background: none; color: var(--text-2); font-size: .84rem; font-weight: 600; }
+.cms-seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+.cms-types { display: grid; gap: 10px; }
+.cms-types button { text-align: left; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); display: flex; flex-direction: column; gap: 2px; }
+.cms-types button:hover { border-color: var(--blue); }
+.cms-types span { font-size: .8rem; color: var(--text-3); }
+.cms-item-edit { display: grid; grid-template-columns: auto 1fr 1.4fr auto; gap: 8px; align-items: end; }
+.cms-item-edit .cms-field .cms-label { display: none; }
+
+.cms-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg-2); }
+.cms-savebar { position: sticky; bottom: 16px; margin-top: 16px; max-width: 980px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--text); color: var(--bg-2); box-shadow: var(--shadow-xl); font-weight: 600; font-size: .88rem; z-index: 50; }
+
+@media (max-width: 760px) {
+  .cms-2, .cms-3 { grid-template-columns: 1fr; }
+  .cms-item { flex-wrap: wrap; }
+  .cms-item-main { flex-basis: calc(100% - 120px); }
+  .cms-item-edit { grid-template-columns: 1fr; }
+}

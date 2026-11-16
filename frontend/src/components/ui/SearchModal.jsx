@@ -149,7 +149,7 @@ export default function SearchModal() {
                   className="quick-cat-pill"
                   onClick={() => { close(); navigate(categoryHref(c.name)); }}
                 >
-                  <CategoryIcon name={c.name} /> {c.name} <span className="qc-count">{c.count}</span>
+                  <CategoryIcon name={c.name} icon={c.icon} /> {c.name} <span className="qc-count">{c.count}</span>
                 </button>
               ))}
             </div>
@@ -170,7 +170,7 @@ export default function SearchModal() {
                       <div className="search-cat-matches">
                         {catMatches.map(c => (
                           <button key={c.name} className="quick-cat-pill" onClick={() => { close(); navigate(`/products?category=${encodeURIComponent(c.name)}&keyword=${encodeURIComponent(query)}`); }}>
-                            <CategoryIcon name={c.name} /> “{query}” in {c.name} <span className="qc-count">{c.count}</span>
+                            <CategoryIcon name={c.name} icon={c.icon} /> “{query}” in {c.name} <span className="qc-count">{c.count}</span>
                           </button>
                         ))}
                       </div>
@@ -211,7 +211,7 @@ export default function SearchModal() {
                   <div className="search-quick-cats" style={{ justifyContent: 'center', marginTop: 12 }}>
                     {categories.slice(0, 6).map(c => (
                       <button key={c.name} className="quick-cat-pill" onClick={() => { close(); navigate(categoryHref(c.name)); }}>
-                        <CategoryIcon name={c.name} /> {c.name}
+                        <CategoryIcon name={c.name} icon={c.icon} /> {c.name}
                       </button>
                     ))}
                   </div>

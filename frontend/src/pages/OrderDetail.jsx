@@ -8,7 +8,7 @@ import { SafeImage } from '../components/product/ProductCard.jsx';
 import toast from 'react-hot-toast';
 import './OrderPages.css';
 
-export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
+import { useWhatsApp } from '../store/site.js';
 
 const STEPS = [
   ['pending', 'Order placed'],
@@ -44,6 +44,7 @@ export function StatusTracker({ status }) {
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const WHATSAPP_NUMBER = useWhatsApp();
   const key = useOrderKey(id);
   const [params] = useSearchParams();
   const [order, setOrder] = useState(null);
@@ -158,7 +159,7 @@ export default function OrderDetail() {
               <dl className="op-sum">
                 <div><dt>Items</dt><dd>AED {fmtAED(order.itemsTotal)}</dd></div>
                 <div><dt>Delivery</dt><dd>{order.shippingFee === 0 ? 'Free' : `AED ${fmtAED(order.shippingFee)}`}</dd></div>
-                <div><dt>VAT (5%)</dt><dd>AED {fmtAED(order.tax)}</dd></div>
+                <div><dt>VAT</dt><dd>AED {fmtAED(order.tax)}</dd></div>
                 <div className="op-total"><dt>Total</dt><dd>AED {fmtAED(order.total)}</dd></div>
               </dl>
               <div className="op-paybox">

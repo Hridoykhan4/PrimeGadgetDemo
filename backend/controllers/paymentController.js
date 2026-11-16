@@ -64,7 +64,7 @@ exports.createCheckoutSession = asyncHandler(async (req, res, next) => {
     line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.shippingFee), product_data: { name: 'Delivery' } } });
   }
   if (order.tax > 0) {
-    line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.tax), product_data: { name: 'VAT (5%)' } } });
+    line_items.push({ quantity: 1, price_data: { currency: 'aed', unit_amount: toFils(order.tax), product_data: { name: 'VAT' } } });
   }
 
   const base = siteBase(req);
@@ -132,5 +132,6 @@ exports.webhook = async (req, res) => {
 };
 
 exports.getPublishableKey = asyncHandler(async (req, res) => {
-  res.json({ success: true, enabled: !!stripe, publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
+  const { cardEnabled } = await require('./cmsController').commerceOf();
+  res.json({ success: true, enabled: !!stripe && cardEnabled, publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });

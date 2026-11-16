@@ -234,5 +234,6 @@
   .hdr-cart.bump { animation: none; }
 }
 @media (max-width: 520px) {
-  .promo-inner > .promo-sep, .promo-inner > span:nth-of-type(3) { display: none; }
+  .promo-inner > .promo-sep, .promo-hide-xs { display: none !important; }
 }
+.brand .brand-logo { max-height: 40px; }

@@ -163,3 +163,8 @@ a.adm-row:hover { background: var(--surface-2); border-radius: 10px; }
 
 @media (max-width: 1200px) { .adm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .adm-grid-2, .adm-grid-eq { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .adm-kpis { grid-template-columns: 1fr 1fr; gap: 10px; } .adm-kpi strong { font-size: 1.2rem; } .adm-search input { width: 100%; } .adm-search { flex: 1; } }
+
+.adm-brand { flex-wrap: wrap; }
+.adm-brand .brand-text { font-family: var(--font-display); font-size: 1rem; color: var(--text); }
+.adm-brand .brand-mark { border-radius: 9px; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.adm-brand-tag { margin-left: auto; font-size: .64rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); }

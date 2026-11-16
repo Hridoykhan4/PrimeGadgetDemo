@@ -88,6 +88,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
   }
   if (req.body.specifications && typeof req.body.specifications === 'string') req.body.specifications = JSON.parse(req.body.specifications);
   if (req.body.features && typeof req.body.features === 'string') req.body.features = JSON.parse(req.body.features);
+  await ensureCategory(req.body.category);
   const product = await Product.create(req.body);
   res.status(201).json({ success: true, product });
 });
@@ -98,6 +99,7 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
   if (body.salePrice !== undefined && body.price !== undefined) {
     body.discountPercent = body.salePrice > 0 && body.salePrice < body.price ? Math.round(((body.price - body.salePrice) / body.price) * 100) : 0;
   }
+  if (body.category) await ensureCategory(body.category);
   const product = await Product.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true });
   if (!product) return next(new AppError('Product not found', 404));
   res.json({ success: true, product });
@@ -110,11 +112,18 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
 });
 
 exports.getCategories = asyncHandler(async (req, res) => {
-  const rows = await Product.aggregate([
-    { $match: { isActive: true } },
-    { $group: { _id: '$category', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-  ]);
-  res.set('Cache-Control', 'public, max-age=60');
-  res.json({ success: true, categories: rows.map((r) => ({ name: r._id, count: r.count })) });
+  const cats = await require('./cmsController').categoriesWithCounts();
+  res.set('Cache-Control', 'public, max-age=30');
+  res.json({ success: true, categories: cats.filter((c) => c.count > 0) });
 });
+
+// Make sure a product's category exists in Admin → Categories
+async function ensureCategory(name) {
+  if (!name) return;
+  const { Category } = require('../models/Cms');
+  const exists = await Category.findOne({ name }).lean();
+  if (!exists) {
+    const last = await Category.findOne().sort('-order').lean();
+    await Category.create({ name, order: (last?.order ?? -1) + 1 });
+  }
+}

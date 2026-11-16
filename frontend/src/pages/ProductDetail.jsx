@@ -10,6 +10,7 @@ import {
 import api from '../utils/api.js';
 import { useCartStore, useWishlistStore, fmtAED } from '../store/index.js';
 import { recentlyViewed } from '../store/catalog.js';
+import { useWhatsApp } from '../store/site.js';
 import ProductReviews from '../components/product/ProductReviews.jsx';
 import ProductRail from '../components/product/ProductRail.jsx';
 import { useCartDrawerStore } from '../components/ui/uiStore.js';
@@ -17,11 +18,11 @@ import ProductCard from '../components/product/ProductCard.jsx';
 import toast from 'react-hot-toast';
 import './ProductDetail.css';
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
 const WHATSAPP_MESSAGE = import.meta.env.VITE_WHATSAPP_MESSAGE || 'Hi PrimeGadgets! I\'m interested in this product.';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const WHATSAPP_NUMBER = useWhatsApp();
   const navigate = useNavigate();
   const toggleWish = useWishlistStore((st) => st.toggle);
   const wishlistedIds = useWishlistStore((st) => st.items);

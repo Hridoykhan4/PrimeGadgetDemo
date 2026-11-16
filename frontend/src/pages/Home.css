@@ -192,3 +192,29 @@
   .promo-tile, .cat-chip, .rail { transition: none; scroll-behavior: auto; }
   .promo-tile:hover, .cat-chip:hover { transform: none; }
 }
+
+/* ── Dashboard-driven themes ─────────────────────────────── */
+.hero2.no-side { grid-template-columns: 1fr; }
+.hero2-was { font-size: .95rem; color: var(--text-3); text-decoration: line-through; margin-left: 6px; }
+.hero2-main.theme-dark { background: linear-gradient(135deg, #0b0c0f, #1c1f26); color: #fff; }
+.hero2-main.theme-blue { background: linear-gradient(135deg, #0047cc, #3d8bff); color: #fff; }
+.hero2-main.theme-orange { background: linear-gradient(135deg, #ff6b00, #ff3b3b); color: #fff; }
+.hero2-main.theme-green { background: linear-gradient(135deg, #0a7f3f, #22c55e); color: #fff; }
+.hero2-main.theme-purple { background: linear-gradient(135deg, #5b21b6, #a855f7); color: #fff; }
+.hero2-main.theme-red { background: linear-gradient(135deg, #b91c1c, #f87171); color: #fff; }
+.hero2-main:not(.theme-light) .hero2-title, .hero2-main:not(.theme-light) .hero2-desc, .hero2-main:not(.theme-light) .hero2-amt,
+.hero2-main:not(.theme-light) .hero2-cur, .hero2-main:not(.theme-light) .hero2-eyebrow { color: #fff; }
+.hero2-main:not(.theme-light) .hero2-btn { background: rgba(255,255,255,.18); color: #fff; border-color: rgba(255,255,255,.3); }
+.hero2-visual.custom .hero2-img { object-fit: cover; border-radius: var(--r-xl); }
+.hero2-visual.custom .hero2-blob { display: none; }
+.promo-tile.theme-orange { background: linear-gradient(140deg, #ff6b00 0%, #ff3b3b 100%); }
+.promo-tile.theme-blue { background: linear-gradient(140deg, #0047cc 0%, #0066ff 100%); }
+.promo-tile.theme-dark { background: linear-gradient(140deg, #0b0c0f 0%, #2a2e37 100%); }
+.promo-tile.theme-green { background: linear-gradient(140deg, #0a7f3f 0%, #22c55e 100%); }
+.promo-tile.theme-purple { background: linear-gradient(140deg, #5b21b6 0%, #a855f7 100%); }
+.promo-tile.theme-red { background: linear-gradient(140deg, #b91c1c 0%, #f87171 100%); }
+.promo-tile.theme-light { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.promo-tile[style*="background-image"] { background-size: cover; background-position: center; }
+.promo-sub { font-size: .84rem; opacity: .9; }
+.cat-chip-img { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; background: #fff; display: block; }
+.cat-chip-img img { width: 100%; height: 100%; object-fit: cover; }

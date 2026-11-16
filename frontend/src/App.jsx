@@ -7,6 +7,7 @@ import SearchModal from './components/ui/SearchModal.jsx';
 import CartDrawer from './components/cart/CartDrawer.jsx';
 import FloatingWhatsApp from './components/ui/FloatingWhatsApp.jsx';
 import { useSearchModalStore } from './components/ui/uiStore.js';
+import { useSiteStore } from './store/site.js';
 
 // Lazy-loaded pages for code splitting
 const Home = lazy(() => import('./pages/Home.jsx'));
@@ -33,6 +34,10 @@ const AdminOrders = lazy(() => import('./pages/admin/Orders.jsx'));
 const AdminUsers = lazy(() => import('./pages/admin/Users.jsx'));
 const AdminReviews = lazy(() => import('./pages/admin/Reviews.jsx'));
 const AdminMessages = lazy(() => import('./pages/admin/Messages.jsx'));
+const AdminBranding = lazy(() => import('./pages/admin/Branding.jsx'));
+const AdminBanners = lazy(() => import('./pages/admin/Banners.jsx'));
+const AdminHome = lazy(() => import('./pages/admin/HomeSections.jsx'));
+const AdminCategories = lazy(() => import('./pages/admin/Categories.jsx'));
 
 const PageLoader = () => (
   <div className="loading-screen">
@@ -75,6 +80,7 @@ export default function App() {
   useEffect(() => {
     initTheme();
     fetchMe();
+    useSiteStore.getState().load();
   }, []);
 
   // Press "/" anywhere to search
@@ -133,6 +139,10 @@ export default function App() {
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
           <Route path="/admin/messages" element={<AdminRoute><AdminMessages /></AdminRoute>} />
+          <Route path="/admin/branding" element={<AdminRoute><AdminBranding /></AdminRoute>} />
+          <Route path="/admin/banners" element={<AdminRoute><AdminBanners /></AdminRoute>} />
+          <Route path="/admin/home" element={<AdminRoute><AdminHome /></AdminRoute>} />
+          <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

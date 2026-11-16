@@ -3,21 +3,22 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { useSiteStore } from './site.js';
 
-export const FREE_SHIPPING_MIN = 200;
-export const SHIPPING_FEE = 15;
-export const VAT_RATE = 0.05;
 const round2 = (n) => Math.round(n * 100) / 100;
 
-// Pure totals helper — always computed from the current items (never cached).
-export function cartTotals(items) {
+// Pure totals helper — always computed from the current items and the delivery/VAT settings from the dashboard.
+export function cartTotals(items, commerce = {}) {
+  const freeMin = Number(commerce.freeShippingMin ?? 200);
+  const fee = Number(commerce.shippingFee ?? 15);
+  const vat = Number(commerce.vatRate ?? 5) / 100;
   const count = items.reduce((s, i) => s + i.qty, 0);
   const subtotal = round2(items.reduce((s, i) => s + Number(i.price || 0) * i.qty, 0));
-  const shipping = subtotal === 0 || subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
-  const tax = round2(subtotal * VAT_RATE);
+  const shipping = subtotal === 0 || subtotal >= freeMin ? 0 : fee;
+  const tax = round2(subtotal * vat);
   const total = round2(subtotal + shipping + tax);
-  const toFreeShipping = Math.max(0, round2(FREE_SHIPPING_MIN - subtotal));
-  return { count, subtotal, shipping, tax, total, toFreeShipping };
+  const toFreeShipping = Math.max(0, round2(freeMin - subtotal));
+  return { count, subtotal, shipping, tax, total, toFreeShipping, freeShippingMin: freeMin, vatRate: Number(commerce.vatRate ?? 5) };
 }
 
 export const fmtAED = (n) =>
@@ -171,7 +172,7 @@ export const useCartStore = create(
 );
 
 // Reactive totals hook
-export const useCartTotals = () => cartTotals(useCartStore((s) => s.items));
+export const useCartTotals = () => cartTotals(useCartStore((s) => s.items), useSiteStore((s) => s.settings.commerce));
 
 // ── Guest orders: remember order access keys on this device ──
 export const useGuestOrdersStore = create(

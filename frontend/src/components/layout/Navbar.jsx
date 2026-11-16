@@ -7,6 +7,8 @@ import {
 } from 'react-icons/fi';
 import { useAuthStore, useThemeStore, useCartStore, useWishlistStore, fmtAED } from '../../store/index.js';
 import { useCatalogStore } from '../../store/catalog.js';
+import { useSiteStore } from '../../store/site.js';
+import Brand from './Brand.jsx';
 import { CategoryIcon, categoryHref } from '../../utils/categories.jsx';
 import { useSearchModalStore, useCartDrawerStore } from '../ui/uiStore.js';
 import api from '../../utils/api.js';
@@ -47,7 +49,7 @@ function MegaMenu({ categories, onClose }) {
               onClick={onClose}
               role="menuitem"
             >
-              <span className="mega-cat-icon"><CategoryIcon name={c.name} /></span>
+              <span className="mega-cat-icon"><CategoryIcon name={c.name} icon={c.icon} /></span>
               <span className="mega-cat-name">{c.name}</span>
               <span className="mega-cat-count">{c.count}</span>
               <FiChevronRight className="mega-cat-arrow" aria-hidden="true" />
@@ -87,6 +89,8 @@ export default function Navbar() {
   const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + i.qty, 0));
   const wishCount = useWishlistStore((s) => s.items.length);
   const { categories, load } = useCatalogStore();
+  const promo = useSiteStore((s) => s.settings.promo);
+  const brandName = useSiteStore((s) => s.settings.brand.name);
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -132,15 +136,24 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="promo-bar">
-        <div className="container promo-inner">
-          <span><FiTruck aria-hidden="true" /> <strong>Free delivery</strong>&nbsp;over AED 200</span>
-          <span className="promo-sep" aria-hidden="true" />
-          <span>Cash on delivery across the UAE</span>
-          <span className="promo-sep promo-hide-sm" aria-hidden="true" />
-          <Link to="/track" className="promo-hide-sm promo-link"><FiMapPin aria-hidden="true" /> Track your order</Link>
+      {promo?.enabled !== false && (
+        <div className="promo-bar">
+          <div className="container promo-inner">
+            {(promo?.items || []).filter(Boolean).map((t, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="promo-sep" aria-hidden="true" />}
+                <span className={i > 0 ? 'promo-hide-xs' : ''}>{i === 0 && <FiTruck aria-hidden="true" />} {t}</span>
+              </React.Fragment>
+            ))}
+            {promo?.showTrackLink !== false && (
+              <>
+                <span className="promo-sep promo-hide-sm" aria-hidden="true" />
+                <Link to="/track" className="promo-hide-sm promo-link"><FiMapPin aria-hidden="true" /> Track your order</Link>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
         <div className="container header-row">
@@ -148,9 +161,8 @@ export default function Navbar() {
             <FiMenu />
           </button>
 
-          <Link to="/" className="brand" aria-label="PrimeGadgets home">
-            <span className="brand-mark"><FiZap aria-hidden="true" /></span>
-            <span className="brand-text"><strong>Prime</strong>Gadgets</span>
+          <Link to="/" className="brand" aria-label={`${brandName} home`}>
+            <Brand size={36} />
           </Link>
 
           <nav className="hdr-nav" aria-label="Main">
@@ -247,7 +259,7 @@ export default function Navbar() {
                 <p className="m-title">Shop by category</p>
                 {categories.map((c) => (
                   <Link key={c.name} to={categoryHref(c.name)} className="m-cat">
-                    <span className="m-cat-icon"><CategoryIcon name={c.name} /></span>
+                    <span className="m-cat-icon"><CategoryIcon name={c.name} icon={c.icon} /></span>
                     <span className="m-cat-name">{c.name}</span>
                     <span className="m-cat-count">{c.count}</span>
                   </Link>

@@ -137,7 +137,7 @@ export default function Products() {
                 </button>
                 {categories.map(c => (
                   <button key={c.name} className={`filter-opt ${filters.category === c.name ? 'active' : ''}`} onClick={() => updateFilter('category', c.name)}>
-                    <CategoryIcon name={c.name} /> <span style={{ flex: 1, textAlign: 'left' }}>{c.name}</span> <span className="filter-count">{c.count}</span>
+                    <CategoryIcon name={c.name} icon={c.icon} /> <span style={{ flex: 1, textAlign: 'left' }}>{c.name}</span> <span className="filter-count">{c.count}</span>
                   </button>
                 ))}
               </div>

@@ -107,6 +107,7 @@ app.use("/api/v1/payments", require("./routes/payments"));
 app.use("/api/v1/stats", require("./routes/stats"));
 app.use("/api/v1/upload", require("./routes/upload"));
 app.use("/api/v1/messages", require("./routes/messages"));
+app.use("/api/v1", require("./routes/cms"));
 
 // Health
 app.get("/api/v1/health", (req, res) =>
@@ -124,6 +125,13 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () =>
   console.log(`🚀 PrimeGadgets API → http://localhost:${PORT}`.green.bold),
 );
+
+// Seed storefront content (settings, banners, home sections, categories) on first run
+require("mongoose").connection.once("open", () => {
+  require("./controllers/cmsController").ensureDefaults()
+    .then(() => console.log("Storefront content ready"))
+    .catch((e) => console.error("CMS defaults failed:", e.message));
+});
 
 // Release stock held by card orders that were never paid
 const { sweepAbandonedCardOrders } = require("./controllers/orderController");

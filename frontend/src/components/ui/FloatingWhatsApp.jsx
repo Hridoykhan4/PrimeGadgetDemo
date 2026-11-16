@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { FiMessageCircle } from 'react-icons/fi';
+import { useWhatsApp } from '../../store/site.js';
 import './FloatingWhatsApp.css';
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
 const WHATSAPP_MESSAGE = import.meta.env.VITE_WHATSAPP_MESSAGE || 'Hi PrimeGadgets! I\'m interested in your products.';
 
 export default function FloatingWhatsApp() {
+  const WHATSAPP_NUMBER = useWhatsApp();
   const handleClick = () => {
     const encodedMsg = encodeURIComponent(WHATSAPP_MESSAGE);
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`, '_blank');

@@ -10,11 +10,9 @@ import toast from 'react-hot-toast';
 import api from '../utils/api.js';
 import './Contact.css';
 
-const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '971581234567';
-const WA_DISPLAY = `+${WA_NUMBER.slice(0, 3)} ${WA_NUMBER.slice(3, 5)} ${WA_NUMBER.slice(5, 8)} ${WA_NUMBER.slice(8)}`;
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@primegadgets.ae';
+import { useSiteStore } from '../store/site.js';
 
-const CONTACT_INFO = [
+const contactInfo = (WA_DISPLAY, SUPPORT_EMAIL, ADDRESS) => [
   {
     icon: FiMessageCircle,
     label: 'WhatsApp',
@@ -34,7 +32,7 @@ const CONTACT_INFO = [
   {
     icon: FiMapPin,
     label: 'Delivery area',
-    value: 'All 7 emirates',
+    value: ADDRESS || 'All 7 emirates',
     sub: 'Shipped from our UAE stock',
     color: '#0066ff',
     bg: 'rgba(0, 102, 255, 0.08)',
@@ -63,6 +61,10 @@ const WHY_CONTACT = [
 ];
 
 export default function Contact() {
+  const contact = useSiteStore((st) => st.settings.contact);
+  const WA_NUMBER = String(contact.whatsapp || '').replace(/\D/g, '');
+  const WA_DISPLAY = WA_NUMBER ? `+${WA_NUMBER.slice(0, 3)} ${WA_NUMBER.slice(3, 5)} ${WA_NUMBER.slice(5, 8)} ${WA_NUMBER.slice(8)}` : '';
+  const CONTACT_INFO = contactInfo(WA_DISPLAY, contact.email, contact.address);
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sending, setSending] = useState(false);

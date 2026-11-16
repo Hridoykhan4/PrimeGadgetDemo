@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiX, FiTrash2, FiShoppingBag, FiArrowRight, FiPlus, FiMinus, FiTruck, FiLock, FiCheckCircle } from 'react-icons/fi';
-import { useCartStore, useCartTotals, fmtAED, FREE_SHIPPING_MIN } from '../../store/index.js';
+import { useCartStore, useCartTotals, fmtAED } from '../../store/index.js';
 import { useCartDrawerStore } from '../ui/uiStore.js';
 import { SafeImage } from '../product/ProductCard.jsx';
 import './CartDrawer.css';
 
-export function FreeShippingMeter({ subtotal, toFreeShipping }) {
-  const pct = Math.min(100, (subtotal / FREE_SHIPPING_MIN) * 100);
+export function FreeShippingMeter({ subtotal, toFreeShipping, freeShippingMin = 200 }) {
+  if (!freeShippingMin) return null;
+  const pct = Math.min(100, (subtotal / freeShippingMin) * 100);
   return (
     <div className="ship-meter">
       <p>
@@ -26,7 +27,7 @@ export function FreeShippingMeter({ subtotal, toFreeShipping }) {
 export default function CartDrawer() {
   const { isOpen, close } = useCartDrawerStore();
   const { items, removeItem, updateQty } = useCartStore();
-  const { count, subtotal, shipping, tax, total, toFreeShipping } = useCartTotals();
+  const { count, subtotal, shipping, tax, total, toFreeShipping, freeShippingMin, vatRate } = useCartTotals();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function CartDrawer() {
               </div>
             ) : (
               <>
-                <div className="cd-meter"><FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} /></div>
+                <div className="cd-meter"><FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} freeShippingMin={freeShippingMin} /></div>
                 <ul className="cd-items">
                   <AnimatePresence initial={false}>
                     {items.map((item) => (
@@ -103,7 +104,7 @@ export default function CartDrawer() {
                   <dl className="cd-sum">
                     <div><dt>Subtotal</dt><dd>AED {fmtAED(subtotal)}</dd></div>
                     <div><dt>Delivery</dt><dd className={shipping === 0 ? 'free' : ''}>{shipping === 0 ? 'Free' : `AED ${fmtAED(shipping)}`}</dd></div>
-                    <div><dt>VAT (5%)</dt><dd>AED {fmtAED(tax)}</dd></div>
+                    <div><dt>VAT ({vatRate}%)</dt><dd>AED {fmtAED(tax)}</dd></div>
                     <div className="cd-total"><dt>Total</dt><dd>AED {fmtAED(total)}</dd></div>
                   </dl>
                   <button className="btn btn-primary btn-full btn-lg cd-checkout" onClick={() => go('/checkout')}>

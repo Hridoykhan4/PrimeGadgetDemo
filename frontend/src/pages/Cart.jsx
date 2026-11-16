@@ -12,7 +12,7 @@ import './Shop.css';
 
 export default function Cart() {
   const { items, removeItem, updateQty } = useCartStore();
-  const { count, subtotal, shipping, tax, total, toFreeShipping } = useCartTotals();
+  const { count, subtotal, shipping, tax, total, toFreeShipping, freeShippingMin, vatRate } = useCartTotals();
   const toggleWish = useWishlistStore((s) => s.toggle);
   const navigate = useNavigate();
   const [suggest, setSuggest] = useState([]);
@@ -51,7 +51,7 @@ export default function Cart() {
           ) : (
             <div className="cart-layout">
               <div className="cart-list">
-                <div className="cart-meter"><FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} /></div>
+                <div className="cart-meter"><FreeShippingMeter subtotal={subtotal} toFreeShipping={toFreeShipping} freeShippingMin={freeShippingMin} /></div>
                 <AnimatePresence initial={false}>
                   {items.map((item) => (
                     <motion.div key={item.key} className="cart-row" layout exit={{ opacity: 0, x: -30, transition: { duration: 0.18 } }}>
@@ -81,7 +81,7 @@ export default function Cart() {
                   <dl className="co-sum">
                     <div><dt>Subtotal</dt><dd>AED {fmtAED(subtotal)}</dd></div>
                     <div><dt>Delivery</dt><dd className={shipping === 0 ? 'free' : ''}>{shipping === 0 ? 'Free' : `AED ${fmtAED(shipping)}`}</dd></div>
-                    <div><dt>VAT (5%)</dt><dd>AED {fmtAED(tax)}</dd></div>
+                    <div><dt>VAT ({vatRate}%)</dt><dd>AED {fmtAED(tax)}</dd></div>
                     <div className="co-total"><dt>Total</dt><dd>AED {fmtAED(total)}</dd></div>
                   </dl>
                   <button className="btn btn-primary btn-full btn-lg cart-go" onClick={() => navigate('/checkout')}><FiLock /> Checkout securely</button>

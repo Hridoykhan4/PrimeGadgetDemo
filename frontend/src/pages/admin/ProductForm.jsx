@@ -6,7 +6,6 @@ import AdminLayout from './AdminLayout.jsx';
 import api from '../../utils/api.js';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = ['Drones','Smart Watches','AirBuds & Headphones','VR & AR','AI Devices','Cameras','Smart Home','Gaming','Laptops','Accessories','Home & Kitchen','Beauty & Personal Care','Kids & Toys','Tools & Outdoor'];
 
 // Defined outside the component so inputs keep focus while typing
 const Field = ({ label, children }) => <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{label}</label>{children}</div>;
@@ -23,6 +22,9 @@ export default function AdminProductForm() {
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
+  const [categories, setCategories] = useState([]);
+  const [newCat, setNewCat] = useState(false);
+  useEffect(() => { api.get('/cms/categories').then(({ data }) => setCategories(data.items.map((c) => c.name))).catch(() => {}); }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -100,9 +102,18 @@ export default function AdminProductForm() {
                   <div className="grid-2">
                     <Field label="Brand *"><input className="input" value={form.brand} onChange={set('brand')} required /></Field>
                     <Field label="Category *">
-                      <select className="input" value={form.category} onChange={set('category')}>
-                        {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                      </select>
+                      {newCat ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input className="input" value={form.category} onChange={set('category')} placeholder="New category name" autoFocus />
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setNewCat(false); setForm((p) => ({ ...p, category: categories[0] || '' })); }}>Cancel</button>
+                        </div>
+                      ) : (
+                        <select className="input" value={form.category} onChange={(e) => e.target.value === '__new' ? (setNewCat(true), setForm((p) => ({ ...p, category: '' }))) : set('category')(e)}>
+                          {!categories.includes(form.category) && form.category && <option>{form.category}</option>}
+                          {categories.map(c => <option key={c}>{c}</option>)}
+                          <option value="__new">+ New category…</option>
+                        </select>
+                      )}
                     </Field>
                   </div>
                   <Field label="Short Description"><input className="input" value={form.shortDescription} onChange={set('shortDescription')} /></Field>

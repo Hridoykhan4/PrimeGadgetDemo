@@ -5,12 +5,14 @@ import { Helmet } from 'react-helmet-async';
 import { FiCheck, FiPackage, FiHome, FiCreditCard, FiClock, FiMessageCircle, FiCopy } from 'react-icons/fi';
 import api from '../utils/api.js';
 import { fmtAED } from '../store/index.js';
-import { useOrderKey, StatusTracker, WHATSAPP_NUMBER } from './OrderDetail.jsx';
+import { useOrderKey, StatusTracker } from './OrderDetail.jsx';
+import { useWhatsApp } from '../store/site.js';
 import toast from 'react-hot-toast';
 import './OrderPages.css';
 
 export default function OrderSuccess() {
   const { id } = useParams();
+  const WHATSAPP_NUMBER = useWhatsApp();
   const key = useOrderKey(id);
   const [params] = useSearchParams();
   const sessionId = params.get('session_id');
